@@ -34,7 +34,7 @@
       <h2>Submit Attendance or Outstation</h2>
       <form id="attendance-form" action="/submit-attendance" method="POST">
         <label for="employee">Employee Name:</label>
-        <input type="text" id="employee" name="employee" placeholder="Enter employee name" required />
+        <input type="text" id="employee" name="employee" required />
 
         <label for="status">Status:</label>
         <select id="status" name="status" required>
@@ -44,18 +44,18 @@
 
         <div id="check-in-time">
           <label for="check_in_time">Check-in Time:</label>
-          <input type="time" id="check_in_time" name="check_in_time" required />
+          <input type="time" id="check_in_time" name="check_in_time" />
         </div>
 
         <div id="destination-fields">
           <label for="destination">Destination (for Outstation):</label>
-          <input type="text" id="destination" name="destination" placeholder="Enter destination" required />
+          <input type="text" id="destination" name="destination" />
           <br>
           <label for="start-date">Start Date:</label>
-          <input type="date" id="start-date" name="start_date" required />
+          <input type="date" id="start-date" name="start_date" />
           <br>
           <label for="end-date">End Date:</label>
-          <input type="date" id="end-date" name="end_date" required />
+          <input type="date" id="end-date" name="end_date" />
         </div>
 
         <button type="submit">Submit</button>
