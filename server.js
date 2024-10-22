@@ -35,8 +35,7 @@ function formatTo12Hour(time) {
 
 // Handle form submission
 app.post("/submit-attendance", (req, res) => {
-  const { employee, status, destination, start_date, end_date, check_in_time } =
-    req.body;
+  const { employee, status, destination, start_date, end_date, check_in_time } = req.body;
 
   console.log("Received Data:", {
     employee,
@@ -50,10 +49,10 @@ app.post("/submit-attendance", (req, res) => {
   // Calculate back time based on check-in time
   let back_time = null;
   if (status === "Present" && check_in_time) {
-    const [hours, minutes] = check_in_time.split(":").map(Number);
+    const [checkInHours, checkInMinutes] = check_in_time.split(":").map(Number);
     const checkInDate = new Date();
-    checkInDate.setHours(hours, minutes, 0, 0);
-    
+    checkInDate.setHours(checkInHours, checkInMinutes, 0, 0);
+
     const dayOfWeek = checkInDate.getDay(); // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
 
     // Set back time based on the day of the week
@@ -63,7 +62,8 @@ app.post("/submit-attendance", (req, res) => {
       checkInDate.setHours(checkInDate.getHours() + 7.5); // 7.5 hours for Thursday
     }
     
-    back_time = formatTo12Hour(checkInDate.toTimeString().split(" ")[0]); // Format as 12-hour
+    // Format the back time correctly in 12-hour format
+    back_time = formatTo12Hour(checkInDate.toTimeString().split(" ")[0]);
   }
 
   db.run(
@@ -113,8 +113,7 @@ app.get("/present", (req, res) => {
 // Get employees on outstation
 app.get("/outstation", (req, res) => {
   db.all(
-    `SELECT * FROM attendance WHERE status =
-'Outstation'`,
+    `SELECT * FROM attendance WHERE status = 'Outstation'`,
     [],
     (err, rows) => {
       if (err) throw err;
