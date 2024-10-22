@@ -19,24 +19,40 @@ db.serialize(() => {
         status TEXT,
         destination TEXT,
         start_date DATE,
-        end_date DATE
+        end_date DATE,
+        check_in_time TIME,
+        back_time TIME
     )`);
 });
 
+
 // Handle form submission
 app.post('/submit-attendance', (req, res) => {
-    const { employee, status, destination, start_date, end_date } = req.body;
+    const { employee, status, destination, start_date, end_date, check_in_time } = req.body;
 
     console.log("Received Data:", {
         employee,
         status,
         destination,
         start_date,
-        end_date
+        end_date,
+        check_in_time
     });
 
-    db.run(`INSERT INTO attendance (employee, status, destination, start_date, end_date) VALUES (?, ?, ?, ?, ?)`,
-        [employee, status, destination || null, start_date || null, end_date || null],
+    // Calculate back time based on check-in time
+    let back_time = null;
+    if (status === 'Present' && check_in_time) {
+        const [hours, minutes] = check_in_time.split(':').map(Number);
+        const checkInDate = new Date();
+        checkInDate.setHours(hours, minutes, 0, 0);
+        
+        // Set back time to 9 hours after check-in
+        checkInDate.setHours(checkInDate.getHours() + 9); // 8 hours work + 1 hour lunch
+        back_time = checkInDate.toTimeString().split(' ')[0]; // Format as HH:MM:SS
+    }
+
+    db.run(`INSERT INTO attendance (employee, status, destination, start_date, end_date, check_in_time, back_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [employee, status, destination || null, start_date || null, end_date || null, check_in_time || null, back_time],
         function (err) {
             if (err) {
                 console.error(err.message);
@@ -46,6 +62,7 @@ app.post('/submit-attendance', (req, res) => {
         }
     );
 });
+
 
 // Schedule a task to reset present employees at midnight every day
 cron.schedule('0 0 * * *', () => {
