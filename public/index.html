@@ -1,82 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Office Tracker</title>
     <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
+</head>
+<body>
     <h1>Office Attendance & Outstation Tracker</h1>
 
     <!-- Attendance Form -->
     <section>
-      <h2>Submit Attendance or Outstation</h2>
-      <form id="attendance-form" action="/submit-attendance" method="POST">
-        <label for="employee">Employee Name:</label>
-        <input type="text" id="employee" name="employee" required />
+        <h2>Submit Attendance or Outstation</h2>
+        <form id="attendance-form" action="/submit-attendance" method="POST">
+            <label for="employee">Employee Name:</label>
+            <input type="text" id="employee" name="employee" required />
 
-        <label for="check-in-time">Check-in Time:</label>
-        <input type="time" id="check-in-time" name="check_in_time" required />
+            <label for="status">Status:</label>
+            <select id="status" name="status" required>
+                <option value="Present">Present</option>
+                <option value="Outstation">Outstation</option>
+            </select>
 
-        <label for="status">Status:</label>
-        <select id="status" name="status" required>
-          <option value="Present">Present</option>
-          <option value="Outstation">Outstation</option>
-        </select>
+            <!-- Check-In Time will be hidden if Outstation is selected -->
+            <div id="check-in-time-container">
+                <label for="check-in-time">Check-in Time:</label>
+                <input type="time" id="check-in-time" name="check_in_time" required />
+            </div>
 
-        <label for="destination">Destination (for Outstation):</label>
-        <input type="text" id="destination" name="destination" />
+            <label for="destination">Destination (for Outstation):</label>
+            <input type="text" id="destination" name="destination" />
 
-        <label for="start-date">Start Date:</label>
-        <input type="date" id="start-date" name="start_date" />
+            <label for="start-date">Start Date:</label>
+            <input type="date" id="start-date" name="start_date" />
 
-        <label for="end-date">End Date:</label>
-        <input type="date" id="end-date" name="end_date" />
+            <label for="end-date">End Date:</label>
+            <input type="date" id="end-date" name="end_date" />
 
-        <button type="submit">Submit</button>
-      </form>
+            <button type="submit">Submit</button>
+        </form>
     </section>
 
     <!-- Dashboard -->
     <section>
-      <h2>Employees Present in Office</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Employee Name</th>
-          </tr>
-        </thead>
+        <h2>Employees Present in Office</h2>
         <table id="present-employees">
-          <thead>
-            <tr>
-              <th>Employee</th>
-              <th>Check-In Time</th>
-              <th>Back Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Populate this tbody with JavaScript -->
-          </tbody>
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Check-In Time</th>
+                    <th>Back Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Populate this tbody with JavaScript -->
+            </tbody>
         </table>
-      </table>
 
-      <h2>Employees on Outstation</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Employee Name</th>
-            <th>Destination</th>
-            <th>Start Date</th>
-            <th>End Date</th>
-            <th>Number of Days</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="outstation-employees"></tbody>
-      </table>
+        <h2>Employees on Outstation</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Employee Name</th>
+                    <th>Destination</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Number of Days</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="outstation-employees"></tbody>
+        </table>
     </section>
 
     <script src="app.js"></script>
-  </body>
+
+    <script>
+        // Show/hide check-in time input based on selected status
+        const statusSelect = document.getElementById('status');
+        const checkInTimeContainer = document.getElementById('check-in-time-container');
+
+        statusSelect.addEventListener('change', function() {
+            if (this.value === 'Outstation') {
+                checkInTimeContainer.style.display = 'none';
+                document.getElementById('check-in-time').value = ''; // Clear the value if switching to Outstation
+            } else {
+                checkInTimeContainer.style.display = 'block';
+            }
+        });
+    </script>
+</body>
 </html>

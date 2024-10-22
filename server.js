@@ -25,6 +25,7 @@ db.serialize(() => {
     )`);
 });
 
+// Function to format time to 12-hour format
 function formatTo12Hour(time) {
   let [hours, minutes] = time.split(":").map(Number);
   const ampm = hours >= 12 ? "PM" : "AM";
@@ -67,7 +68,7 @@ app.post("/submit-attendance", (req, res) => {
       destination || null,
       start_date || null,
       end_date || null,
-      check_in_time || null,
+      status === "Present" ? check_in_time : null, // Only set check_in_time for Present
       back_time,
     ],
     function (err) {
