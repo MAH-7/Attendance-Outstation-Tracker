@@ -6,26 +6,37 @@
     <title>Office Tracker</title>
     <link rel="stylesheet" href="style.css" />
     <script>
-      // Function to toggle the visibility of the check-in time input
-      function toggleCheckInTime() {
-        const statusSelect = document.getElementById("status");
-        const checkInTimeInput = document.getElementById("check-in-time");
-        if (statusSelect.value === "Present") {
-          checkInTimeInput.style.display = "block"; // Show check-in time
-          checkInTimeInput.required = true; // Set required attribute
-        } else {
-          checkInTimeInput.style.display = "none"; // Hide check-in time
-          checkInTimeInput.value = ""; // Clear the input
-          checkInTimeInput.required = false; // Remove required attribute
-        }
-      }
+        // Function to toggle the visibility of inputs based on status
+        function toggleInputs() {
+            const statusSelect = document.getElementById("status");
+            const checkInTimeInput = document.getElementById("check-in-time");
+            const destinationInput = document.getElementById("destination");
+            const startDateInput = document.getElementById("start-date");
+            const endDateInput = document.getElementById("end-date");
 
-      // Add event listener to the status select to call toggle function on change
-      document.addEventListener("DOMContentLoaded", () => {
-        const statusSelect = document.getElementById("status");
-        statusSelect.addEventListener("change", toggleCheckInTime);
-        toggleCheckInTime(); // Initial call to set visibility on page load
-      });
+            if (statusSelect.value === "Present") {
+                checkInTimeInput.style.display = "block"; // Show check-in time
+                destinationInput.value = ""; // Clear destination input
+                startDateInput.value = ""; // Clear start date input
+                endDateInput.value = ""; // Clear end date input
+                destinationInput.style.display = "none"; // Hide destination input
+                startDateInput.style.display = "none"; // Hide start date input
+                endDateInput.style.display = "none"; // Hide end date input
+            } else {
+                checkInTimeInput.style.display = "none"; // Hide check-in time
+                checkInTimeInput.value = ""; // Clear check-in time input
+                destinationInput.style.display = "block"; // Show destination input
+                startDateInput.style.display = "block"; // Show start date input
+                endDateInput.style.display = "block"; // Show end date input
+            }
+        }
+
+        // Add event listener to the status select to call toggle function on change
+        document.addEventListener("DOMContentLoaded", () => {
+            const statusSelect = document.getElementById("status");
+            statusSelect.addEventListener("change", toggleInputs);
+            toggleInputs(); // Initial call to set visibility on page load
+        });
     </script>
 </head>
 <body>
@@ -39,7 +50,7 @@
             <input type="text" id="employee" name="employee" required />
 
             <label for="check-in-time">Check-in Time:</label>
-            <input type="time" id="check-in-time" name="check_in_time" />
+            <input type="time" id="check-in-time" name="check_in_time" required />
 
             <label for="status">Status:</label>
             <select id="status" name="status" required>
@@ -48,13 +59,13 @@
             </select>
 
             <label for="destination">Destination (for Outstation):</label>
-            <input type="text" id="destination" name="destination" required />
+            <input type="text" id="destination" name="destination" />
 
             <label for="start-date">Start Date:</label>
-            <input type="date" id="start-date" name="start_date" required />
+            <input type="date" id="start-date" name="start_date" />
 
             <label for="end-date">End Date:</label>
-            <input type="date" id="end-date" name="end_date" required />
+            <input type="date" id="end-date" name="end_date" />
 
             <button type="submit">Submit</button>
         </form>

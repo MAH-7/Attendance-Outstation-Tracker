@@ -1,67 +1,51 @@
 document.addEventListener("DOMContentLoaded", function () {
-    fetch("/present")
-        .then((response) => response.json())
-        .then((data) => {
-            const presentTableBody = document.getElementById("present-employees");
-            presentTableBody.innerHTML = ""; // Clear previous entries
-            data.forEach((employee) => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${employee.employee}</td>
-                    <td>${employee.check_in_time}</td>
-                    <td>${employee.back_time || 'N/A'}</td>
-                `;
-                presentTableBody.appendChild(row);
-            });
-        })
-        .catch((err) => console.error("Error fetching present employees:", err));
+    fetchAttendanceData();
 
-    fetch("/outstation")
-        .then((response) => response.json())
-        .then((data) => {
-            const outstationTableBody = document.getElementById("outstation-employees");
-            outstationTableBody.innerHTML = ""; // Clear previous entries
-            data.forEach((outstation) => {
-                const row = document.createElement("tr");
-                const numOfDays = calculateDays(outstation.start_date, outstation.end_date);
-                row.innerHTML = `
-                    <td>${outstation.employee}</td>
-                    <td>${outstation.destination || 'N/A'}</td>
-                    <td>${outstation.start_date || 'N/A'}</td>
-                    <td>${outstation.end_date || 'N/A'}</td>
-                    <td>${numOfDays} days</td>
-                    <td>
-                        <button class="delete-btn" data-id="${outstation.id}">Delete</button>
-                    </td>
-                `;
-                outstationTableBody.appendChild(row);
-            });
+    // Function to fetch attendance data
+    async function fetchAttendanceData() {
+        const response = await fetch("/attendance-data");
+        const data = await response.json();
 
-            // Attach delete event listeners to each delete button
-            const deleteButtons = document.querySelectorAll(".delete-btn");
-            deleteButtons.forEach((button) => {
-                button.addEventListener("click", function () {
-                    const id = this.getAttribute("data-id");
-                    fetch(`/outstation/${id}`, {
-                        method: "DELETE",
-                    })
-                        .then(() => {
-                            console.log(`Deleted outstation record with ID: ${id}`);
-                            // Refresh the outstation table
-                            outstationTableBody.removeChild(row);
-                        })
-                        .catch((err) => console.error("Error deleting outstation record:", err));
-                });
-            });
+        const presentEmployeesTbody = document.getElementById("present-employees");
+        const outstationEmployeesTbody = document.getElementById("outstation-employees");
+
+        presentEmployeesTbody.innerHTML = "";
+        outstationEmployeesTbody.innerHTML = "";
+
+        data.forEach(entry => {
+            if (entry.status === "Present") {
+                presentEmployeesTbody.innerHTML += `
+                    <tr>
+                        <td>${entry.employee}</td>
+                        <td>${entry.check_in_time}</td>
+                        <td>${entry.back_time || "N/A"}</td>
+                    </tr>
+                `;
+            } else if (entry.status === "Outstation") {
+                const startDate = new Date(entry.start_date);
+                const endDate = new Date(entry.end_date);
+                const numberOfDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) || 0;
+
+                outstationEmployeesTbody.innerHTML += `
+                    <tr>
+                        <td>${entry.employee}</td>
+                        <td>${entry.destination}</td>
+                        <td>${entry.start_date}</td>
+                        <td>${entry.end_date}</td>
+                        <td>${numberOfDays} days</td>
+                        <td><button onclick="deleteEntry(${entry.id})">Delete</button></td>
+                    </tr>
+                `;
+            }
+        });
+    }
+
+    // Add delete function
+    window.deleteEntry = function(id) {
+        fetch(`/outstation/${id}`, {
+            method: "DELETE",
         })
-        .catch((err) => console.error("Error fetching outstation employees:", err));
+        .then(() => fetchAttendanceData())
+        .catch(err => console.error("Error deleting outstation:", err));
+    };
 });
-
-// Helper function to calculate the number of days between two dates
-function calculateDays(startDate, endDate) {
-    if (!startDate || !endDate) return 0;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const timeDiff = Math.abs(end - start);
-    return Math.ceil(timeDiff / (1000 * 3600 * 24)); // Convert milliseconds to days
-}
