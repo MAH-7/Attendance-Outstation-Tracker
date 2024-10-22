@@ -27,25 +27,16 @@ db.serialize(() => {
 
 // Format time to 12-hour format
 function formatTo12Hour(time) {
-    const [hours, minutes] = time.split(":").map(Number);
-    if (isNaN(hours) || isNaN(minutes)) {
-        console.error("Invalid time input:", time); // Log the invalid input
-        return "Invalid Time";
-    }
-    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-        console.error("Time out of range:", time); // Log the out-of-range time
-        return "Invalid Time";
-    }
-    
-    const period = hours >= 12 ? "PM" : "AM";
-    const adjustedHours = hours % 12 || 12; // Convert 0 to 12
-    return `${adjustedHours}:${String(minutes).padStart(2, '0')} ${period}`;
+  let [hours, minutes] = time.split(":").map(Number);
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12; // Convert to 12-hour format
+  return `${hours}:${minutes < 10 ? "0" + minutes : minutes} ${ampm}`;
 }
-
 
 // Handle form submission
 app.post("/submit-attendance", (req, res) => {
-  const { employee, status, destination, start_date, end_date, check_in_time } = req.body;
+  const { employee, status, destination, start_date, end_date, check_in_time } =
+    req.body;
 
   console.log("Received Data:", {
     employee,
@@ -56,37 +47,24 @@ app.post("/submit-attendance", (req, res) => {
     check_in_time,
   });
 
-  // Validate check_in_time format
+  // Calculate back time based on check-in time
+  let back_time = null;
   if (status === "Present" && check_in_time) {
-    const timePattern = /^\d{2}:\d{2}$/; // HH:mm format
-    if (!timePattern.test(check_in_time)) {
-      console.error(`Invalid check_in_time format: ${check_in_time}`);
-      return res.status(400).send("Invalid check-in time format. Please use HH:mm.");
-    }
-  }
-
-// Calculate back time based on check-in time
-let back_time = null;
-if (status === "Present" && check_in_time) {
     const [hours, minutes] = check_in_time.split(":").map(Number);
     const checkInDate = new Date();
     checkInDate.setHours(hours, minutes, 0, 0);
     
-    const dayOfWeek = checkInDate.getDay(); // Get the day of the week
+    const dayOfWeek = checkInDate.getDay(); // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
 
     // Set back time based on the day of the week
     if (dayOfWeek >= 0 && dayOfWeek <= 3) { // Sunday to Wednesday
-        checkInDate.setHours(checkInDate.getHours() + 9); // 9 hours for Sun-Wed
+      checkInDate.setHours(checkInDate.getHours() + 9); // 9 hours for Sun-Wed
     } else if (dayOfWeek === 4) { // Thursday
-        checkInDate.setHours(checkInDate.getHours() + 7, 30); // 7 hours 30 minutes for Thursday
+      checkInDate.setHours(checkInDate.getHours() + 7.5); // 7.5 hours for Thursday
     }
-
-    // Format back_time to 12-hour format
-    back_time = formatTo12Hour(checkInDate.toTimeString().split(" ")[0]);
-}
-
-  // Format check_in_time for Present
-  const formattedCheckInTime = status === "Present" ? formatTo12Hour(check_in_time) : null;
+    
+    back_time = formatTo12Hour(checkInDate.toTimeString().split(" ")[0]); // Format as 12-hour
+  }
 
   db.run(
     `INSERT INTO attendance (employee, status, destination, start_date, end_date, check_in_time, back_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -96,7 +74,7 @@ if (status === "Present" && check_in_time) {
       destination || null,
       start_date || null,
       end_date || null,
-      formattedCheckInTime, // Insert formatted check_in_time
+      status === "Present" ? check_in_time : null, // Only set check_in_time for Present
       back_time,
     ],
     function (err) {
@@ -127,13 +105,7 @@ app.get("/present", (req, res) => {
     [],
     (err, rows) => {
       if (err) throw err;
-      // Format check_in_time and back_time to 12-hour format before sending the response
-      const formattedRows = rows.map(row => ({
-        ...row,
-        check_in_time: formatTo12Hour(row.check_in_time), // Format check_in_time
-        back_time: formatTo12Hour(row.back_time), // Format back_time
-      }));
-      res.json(formattedRows);
+      res.json(rows);
     }
   );
 });
@@ -141,7 +113,8 @@ app.get("/present", (req, res) => {
 // Get employees on outstation
 app.get("/outstation", (req, res) => {
   db.all(
-    `SELECT * FROM attendance WHERE status = 'Outstation'`,
+    `SELECT * FROM attendance WHERE status =
+'Outstation'`,
     [],
     (err, rows) => {
       if (err) throw err;
