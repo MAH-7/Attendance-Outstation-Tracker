@@ -35,32 +35,46 @@ function formatTo12Hour(time) {
 
 // Handle form submission
 app.post("/submit-attendance", (req, res) => {
-  const { employee, status, destination, start_date, end_date, check_in_time } =
-    req.body;
+  const { employee, status, destination, start_date, end_date, check_in_time } = req.body;
 
+  console.log("Received Data:", {
+    employee,
+    status,
+    destination,
+    start_date,
+    end_date,
+    check_in_time,
+  });
+
+  // Format check_in_time to 12-hour format
+  let formattedCheckInTime = check_in_time ? formatTo12Hour(check_in_time) : null;
+
+  // Calculate back time based on check-in time
   let back_time = null;
   if (status === "Present" && check_in_time) {
     const [hours, minutes] = check_in_time.split(":").map(Number);
     const checkInDate = new Date();
-    checkInDate.setHours(hours, minutes);
-    checkInDate.setHours(checkInDate.getHours() + 9); // 9 hours (8 work + 1 lunch)
-    back_time = formatTo12Hour(checkInDate.toTimeString().split(" ")[0]);
+    checkInDate.setHours(hours, minutes, 0, 0);
+
+    // Set back time to 9 hours after check-in (8 hours work + 1 hour lunch)
+    checkInDate.setHours(checkInDate.getHours() + 9);
+    back_time = formatTo12Hour(checkInDate.toTimeString().split(" ")[0]); // Format as 12-hour
   }
 
   db.run(
-    `INSERT INTO attendance (employee, status, destination, start_date, end_date, check_in_time, back_time) 
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO attendance (employee, status, destination, start_date, end_date, check_in_time, back_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
       employee,
       status,
-      status === "Outstation" ? destination : null,
-      status === "Outstation" ? start_date : null,
-      status === "Outstation" ? end_date : null,
-      status === "Present" ? check_in_time : null,
+      destination || null,
+      start_date || null,
+      end_date || null,
+      formattedCheckInTime, // Use formatted check_in_time for Present status
       back_time,
     ],
     function (err) {
       if (err) {
+        console.error(err.message);
         return res.status(500).send("Database error");
       }
       res.redirect("/");
