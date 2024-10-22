@@ -2,7 +2,7 @@ const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const bodyParser = require("body-parser");
 const path = require("path");
-const cron = require("node-cron"); // Import the node-cron library
+const cron = require("node-cron");
 
 const app = express();
 const db = new sqlite3.Database(":memory:");
@@ -36,50 +36,39 @@ function formatTo12Hour(time) {
 
 // Handle form submission
 app.post("/submit-attendance", (req, res) => {
-  const { employee, status, destination, start_date, end_date, check_in_time } =
-    req.body;
+    const { employee, status, destination, start_date, end_date, check_in_time } = req.body;
 
-  console.log("Received Data:", {
-    employee,
-    status,
-    destination,
-    start_date,
-    end_date,
-    check_in_time,
-  });
-
-  // Calculate back time based on check-in time
-  let back_time = null;
-  if (status === "Present" && check_in_time) {
-    const [hours, minutes] = check_in_time.split(":").map(Number);
-    const checkInDate = new Date();
-    checkInDate.setHours(hours, minutes, 0, 0);
-
-    // Set back time to 9 hours after check-in (8 hours work + 1 hour lunch)
-    checkInDate.setHours(checkInDate.getHours() + 9);
-    back_time = formatTo12Hour(checkInDate.toTimeString().split(" ")[0]); // Format as 12-hour
-  }
-
-  db.run(
-    `INSERT INTO attendance (employee, status, destination, start_date, end_date, check_in_time, back_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [
-      employee,
-      status,
-      destination || null,
-      start_date || null,
-      end_date || null,
-      status === "Present" ? check_in_time : null, // Only set check_in_time for Present
-      back_time,
-    ],
-    function (err) {
-      if (err) {
-        console.error(err.message);
-        return res.status(500).send("Database error");
-      }
-      res.redirect("/");
+    // Calculate back time based on check-in time only if Present
+    let back_time = null;
+    if (status === "Present" && check_in_time) {
+        const [hours, minutes] = check_in_time.split(":").map(Number);
+        const checkInDate = new Date();
+        checkInDate.setHours(hours, minutes, 0, 0);
+        checkInDate.setHours(checkInDate.getHours() + 9); // Set back time
+        back_time = formatTo12Hour(checkInDate.toTimeString().split(" ")[0]); // Format as 12-hour
     }
-  );
+
+    db.run(
+        `INSERT INTO attendance (employee, status, destination, start_date, end_date, check_in_time, back_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+            employee,
+            status,
+            destination || null,
+            start_date || null,
+            end_date || null,
+            status === "Present" ? check_in_time : null, // Only set check_in_time for Present
+            back_time,
+        ],
+        function (err) {
+            if (err) {
+                console.error(err.message);
+                return res.status(500).send("Database error");
+            }
+            res.redirect("/");
+        }
+    );
 });
+
 
 // Schedule a task to reset present employees at midnight every day
 cron.schedule("0 0 * * *", () => {
@@ -124,8 +113,6 @@ app.get("/outstation", (req, res) => {
 // Delete outstation record
 app.delete("/outstation/:id", (req, res) => {
   const { id } = req.params;
-
-  console.log("Delete Request for ID:", id);
 
   db.run(`DELETE FROM attendance WHERE id = ?`, [id], function (err) {
     if (err) {
