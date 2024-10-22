@@ -51,17 +51,19 @@ document.addEventListener("DOMContentLoaded", function () {
     return Math.ceil(timeDiff / (1000 * 3600 * 24)) + " days";
   }
 
-  function deleteOutstation(id) {
+function deleteOutstation(id) {
     fetch(`/outstation/${id}`, {
-      method: "DELETE",
+        method: "DELETE",
     })
-      .then((response) => {
-        if (response.ok) {
-          location.reload(); // Reload the page to update data
-        } else {
-          console.error("Failed to delete outstation");
-        }
-      })
-      .catch((error) => console.error("Error deleting outstation:", error));
-  }
+        .then((response) => {
+            if (response.ok) {
+                location.reload(); // Reload the page to update data
+            } else {
+                return response.text().then(text => {
+                    throw new Error(text || "Failed to delete outstation");
+                });
+            }
+        })
+        .catch((error) => console.error("Error deleting outstation:", error));
+}
 });
