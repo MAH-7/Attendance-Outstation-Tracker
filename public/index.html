@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Office Tracker</title>
     <link rel="stylesheet" href="style.css" />
     <script>
@@ -34,7 +34,7 @@
       <h2>Submit Attendance or Outstation</h2>
       <form id="attendance-form" action="/submit-attendance" method="POST">
         <label for="employee">Employee Name:</label>
-        <input type="text" id="employee" name="employee" required />
+        <input type="text" id="employee" name="employee" placeholder="Your Name" required />
 
         <label for="status">Status:</label>
         <select id="status" name="status" required>
@@ -49,10 +49,10 @@
 
         <div id="destination-fields">
           <label for="destination">Destination (for Outstation):</label>
-          <input type="text" id="destination" name="destination" />
+          <input type="text" id="destination" name="destination" placeholder="Destination"/>
           <br>
           <label for="start-date">Start Date:</label>
-          <input type="date" id="start-date" name="start_date" />
+          <input type="date" id="start-date" name="start_date" placeholder="123-45-678"/>
           <br>
           <label for="end-date">End Date:</label>
           <input type="date" id="end-date" name="end_date" />
