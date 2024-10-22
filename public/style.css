@@ -1,21 +1,27 @@
+/* Global Styles */
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Arial', sans-serif;
   margin: 0;
   padding: 20px;
+  background-color: #f4f7f9;
+  color: #333;
 }
 
-h1 {
+h1, h2 {
   text-align: center;
+  color: #2c3e50;
 }
 
-h2 {
-  text-align: center;
-}
-
+/* Section Styles */
 section {
   margin-bottom: 40px;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+/* Form Styles */
 form {
   display: flex;
   flex-direction: column;
@@ -25,29 +31,77 @@ form {
 
 label {
   margin: 10px 0 5px;
+  font-weight: bold;
 }
 
 input,
 select,
 button {
-  padding: 10px;
+  padding: 12px;
   margin-bottom: 10px;
+  border: 1px solid #bdc3c7;
+  border-radius: 4px;
 }
 
+input:focus,
+select:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+/* Button Styles */
+button {
+  background-color: #3498db;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #2980b9;
+}
+
+/* Table Styles */
 table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
+  overflow-x: auto; /* Added for horizontal scrolling */
 }
 
 table,
 th,
 td {
-  border: 1px solid black;
+  border: 1px solid #bdc3c7;
 }
 
 th,
 td {
-  padding: 10px;
+  padding: 12px;
   text-align: left;
+}
+
+th {
+  background-color: #3498db;
+  color: white;
+}
+
+/* Responsive Styles */
+@media (max-width: 600px) {
+  form {
+    max-width: 100%;
+  }
+
+  table {
+    font-size: 14px;
+    display: block; /* Added to make the table scrollable */
+    overflow-x: auto; /* Added to allow horizontal scrolling */
+    white-space: nowrap; /* Prevent text from wrapping */
+  }
+
+  th,
+  td {
+    min-width: 120px; /* Ensure minimum width for table cells */
+  }
 }
