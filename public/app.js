@@ -2,9 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
   fetch("/present")
     .then((response) => response.json())
     .then((data) => {
-      const presentTableBody = document
-        .getElementById("present-employees")
-        .getElementsByTagName("tbody")[0];
+      const presentTableBody = document.getElementById("present-employees");
       presentTableBody.innerHTML = ""; // Clear previous entries
       data.forEach((employee) => {
         const row = document.createElement("tr");
@@ -22,6 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
     .then((response) => response.json())
     .then((data) => {
       const outstationTable = document.getElementById("outstation-employees");
+      outstationTable.innerHTML = ""; // Clear previous entries
       data.forEach((outstation) => {
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -29,10 +28,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <td>${outstation.destination}</td>
                 <td>${outstation.start_date}</td>
                 <td>${outstation.end_date}</td>
-                <td>${calculateDays(
-                  outstation.start_date,
-                  outstation.end_date
-                )}</td>
+                <td>${calculateDays(outstation.start_date, outstation.end_date)}</td>
                 <td><button class="delete-btn" data-id="${outstation.id}">Delete</button></td>
             `;
         outstationTable.appendChild(row);
