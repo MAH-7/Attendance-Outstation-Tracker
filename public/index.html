@@ -1,82 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Office Attendance & Outstation Tracker</title>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Office Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+    <script>
+      // Function to toggle input visibility based on status
+      function toggleInputs() {
+        const statusSelect = document.getElementById("status");
+        const checkInTimeInput = document.getElementById("check-in-time");
+        const destinationInput = document.getElementById("destination");
+        const startDateInput = document.getElementById("start-date");
+        const endDateInput = document.getElementById("end-date");
+
+        if (statusSelect.value === "Present") {
+          checkInTimeInput.style.display = "block"; // Show check-in time
+          destinationInput.style.display = "none"; // Hide destination
+          startDateInput.style.display = "none"; // Hide start date
+          endDateInput.style.display = "none"; // Hide end date
+        } else {
+          checkInTimeInput.style.display = "none"; // Hide check-in time
+          checkInTimeInput.value = ""; // Clear check-in time
+          destinationInput.style.display = "block"; // Show destination
+          startDateInput.style.display = "block"; // Show start date
+          endDateInput.style.display = "block"; // Show end date
+        }
+      }
+
+      // Add event listener to the status select to call toggle function on change
+      document.addEventListener("DOMContentLoaded", () => {
+        const statusSelect = document.getElementById("status");
+        statusSelect.addEventListener("change", toggleInputs);
+        toggleInputs(); // Initial call to set visibility on page load
+      });
+    </script>
+  </head>
+  <body>
     <h1>Office Attendance & Outstation Tracker</h1>
-    <h2>Submit Attendance or Outstation</h2>
-    <form id="attendanceForm" method="POST" action="/submit">
+
+    <!-- Attendance Form -->
+    <section>
+      <h2>Submit Attendance or Outstation</h2>
+      <form id="attendance-form" action="/submit-attendance" method="POST">
         <label for="employee">Employee Name:</label>
-        <input type="text" id="employee" name="employee" required>
-        
-        <label for="checkInTime">Check-in Time:</label>
-        <input type="time" id="checkInTime" name="check_in_time" required>
+        <input type="text" id="employee" name="employee" required />
+
+        <label for="check-in-time">Check-in Time:</label>
+        <input type="time" id="check-in-time" name="check_in_time" required />
 
         <label for="status">Status:</label>
-        <select id="status" name="status" onchange="toggleInputs()" required>
-            <option value="">Select Status</option>
-            <option value="Present">Present</option>
-            <option value="Outstation">Outstation</option>
+        <select id="status" name="status" required>
+          <option value="Present">Present</option>
+          <option value="Outstation">Outstation</option>
         </select>
 
-        <div id="outstationInputs" style="display:none;">
-            <label for="destination">Destination (for Outstation):</label>
-            <input type="text" id="destination" name="destination">
+        <label for="destination">Destination (for Outstation):</label>
+        <input
+          type="text"
+          id="destination"
+          name="destination"
+          style="display: block"
+        />
 
-            <label for="startDate">Start Date:</label>
-            <input type="date" id="startDate" name="start_date">
+        <label for="start-date">Start Date:</label>
+        <input
+          type="date"
+          id="start-date"
+          name="start_date"
+          style="display: block"
+        />
 
-            <label for="endDate">End Date:</label>
-            <input type="date" id="endDate" name="end_date">
-        </div>
+        <label for="end-date">End Date:</label>
+        <input
+          type="date"
+          id="end-date"
+          name="end_date"
+          style="display: block"
+        />
 
         <button type="submit">Submit</button>
-    </form>
+      </form>
+    </section>
 
-    <h2>Employees Present in Office</h2>
-    <table id="presentTable">
+    <!-- Dashboard -->
+    <section>
+      <h2>Employees Present in Office</h2>
+      <table>
         <thead>
-            <tr>
-                <th>Employee</th>
-                <th>Check-In Time</th>
-                <th>Back Time</th>
-            </tr>
+          <tr>
+            <th>Employee</th>
+            <th>Check-In Time</th>
+            <th>Back Time</th>
+          </tr>
         </thead>
-        <tbody>
-            <!-- Present employees will be populated here -->
+        <tbody id="present-employees">
+          <!-- Populate this tbody with JavaScript -->
         </tbody>
-    </table>
+      </table>
 
-    <h2>Employees on Outstation</h2>
-    <table id="outstationTable">
+      <h2>Employees on Outstation</h2>
+      <table>
         <thead>
-            <tr>
-                <th>Employee Name</th>
-                <th>Destination</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Number of Days</th>
-                <th>Action</th>
-            </tr>
+          <tr>
+            <th>Employee Name</th>
+            <th>Destination</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Number of Days</th>
+            <th>Action</th>
+          </tr>
         </thead>
-        <tbody>
-            <!-- Outstation employees will be populated here -->
-        </tbody>
-    </table>
+        <tbody id="outstation-employees"></tbody>
+      </table>
+    </section>
 
-    <script>
-        function toggleInputs() {
-            const status = document.getElementById("status").value;
-            const outstationInputs = document.getElementById("outstationInputs");
-            if (status === "Outstation") {
-                outstationInputs.style.display = "block";
-            } else {
-                outstationInputs.style.display = "none";
-            }
-        }
-    </script>
-</body>
+    <script src="app.js"></script>
+  </body>
 </html>
