@@ -28,6 +28,11 @@ db.serialize(() => {
 // Format time to 12-hour format
 function formatTo12Hour(time) {
   let [hours, minutes] = time.split(":").map(Number);
+  if (isNaN(hours) || isNaN(minutes)) {
+    console.error(`Invalid time: ${time}`);
+    return "Invalid Time"; // Return a placeholder if time is invalid
+  }
+  
   const ampm = hours >= 12 ? "PM" : "AM";
   hours = hours % 12 || 12; // Convert to 12-hour format
   return `${hours}:${minutes < 10 ? "0" + minutes : minutes} ${ampm}`;
@@ -35,8 +40,7 @@ function formatTo12Hour(time) {
 
 // Handle form submission
 app.post("/submit-attendance", (req, res) => {
-  const { employee, status, destination, start_date, end_date, check_in_time } =
-    req.body;
+  const { employee, status, destination, start_date, end_date, check_in_time } = req.body;
 
   console.log("Received Data:", {
     employee,
@@ -47,10 +51,20 @@ app.post("/submit-attendance", (req, res) => {
     check_in_time,
   });
 
+  // Validate check_in_time format
+  if (status === "Present" && check_in_time) {
+    const timePattern = /^\d{2}:\d{2}$/; // HH:mm format
+    if (!timePattern.test(check_in_time)) {
+      console.error(`Invalid check_in_time format: ${check_in_time}`);
+      return res.status(400).send("Invalid check-in time format. Please use HH:mm.");
+    }
+  }
+
   // Calculate back time based on check-in time
   let back_time = null;
   if (status === "Present" && check_in_time) {
     const [hours, minutes] = check_in_time.split(":").map(Number);
+    
     const checkInDate = new Date();
     checkInDate.setHours(hours, minutes, 0, 0);
     
@@ -66,6 +80,9 @@ app.post("/submit-attendance", (req, res) => {
     back_time = formatTo12Hour(checkInDate.toTimeString().split(" ")[0]); // Format as 12-hour
   }
 
+  // Format check_in_time for Present
+  const formattedCheckInTime = status === "Present" ? formatTo12Hour(check_in_time) : null;
+
   db.run(
     `INSERT INTO attendance (employee, status, destination, start_date, end_date, check_in_time, back_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
@@ -74,7 +91,7 @@ app.post("/submit-attendance", (req, res) => {
       destination || null,
       start_date || null,
       end_date || null,
-      status === "Present" ? check_in_time : null, // Only set check_in_time for Present
+      formattedCheckInTime, // Insert formatted check_in_time
       back_time,
     ],
     function (err) {
@@ -105,7 +122,13 @@ app.get("/present", (req, res) => {
     [],
     (err, rows) => {
       if (err) throw err;
-      res.json(rows);
+      // Format check_in_time and back_time to 12-hour format before sending the response
+      const formattedRows = rows.map(row => ({
+        ...row,
+        check_in_time: formatTo12Hour(row.check_in_time), // Format check_in_time
+        back_time: formatTo12Hour(row.back_time), // Format back_time
+      }));
+      res.json(formattedRows);
     }
   );
 });
@@ -113,8 +136,7 @@ app.get("/present", (req, res) => {
 // Get employees on outstation
 app.get("/outstation", (req, res) => {
   db.all(
-    `SELECT * FROM attendance WHERE status =
-'Outstation'`,
+    `SELECT * FROM attendance WHERE status = 'Outstation'`,
     [],
     (err, rows) => {
       if (err) throw err;
