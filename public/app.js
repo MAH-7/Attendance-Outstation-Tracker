@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
         row.innerHTML = `
                 <td>${employee.employee}</td>
                 <td>${employee.check_in_time}</td>
-                <td>${employee.back_time}</td> <!-- This is now in 12-hour format -->
+                <td>${employee.back_time}</td>
             `;
         presentTableBody.appendChild(row);
       });
@@ -21,53 +21,58 @@ document.addEventListener("DOMContentLoaded", function () {
   fetch("/outstation")
     .then((response) => response.json())
     .then((data) => {
-      const outstationTable = document.getElementById("outstation-employees");
+      const outstationTableBody = document.getElementById(
+        "outstation-employees"
+      );
+      outstationTableBody.innerHTML = ""; // Clear previous entries
       data.forEach((outstation) => {
         const row = document.createElement("tr");
+        const numOfDays = calculateDays(
+          outstation.start_date,
+          outstation.end_date
+        );
         row.innerHTML = `
-                <td>${outstation.employee}</td>
-                <td>${outstation.destination}</td>
-                <td>${outstation.start_date}</td>
-                <td>${outstation.end_date}</td>
-                <td>${calculateDays(
-                  outstation.start_date,
-                  outstation.end_date
-                )}</td>
-                <td><button class="delete-btn" data-id="${
-                  outstation.id
-                }">Delete</button></td>
-            `;
-        outstationTable.appendChild(row);
+          <td>${outstation.employee}</td>
+          <td>${outstation.destination || "N/A"}</td>
+          <td>${outstation.start_date || "N/A"}</td>
+          <td>${outstation.end_date || "N/A"}</td>
+          <td>${numOfDays} days</td>
+          <td>
+            <button class="delete-btn" data-id="${
+              outstation.id
+            }">Delete</button>
+          </td>
+        `;
+        outstationTableBody.appendChild(row);
       });
 
-      // Add event listeners to delete buttons
-      document.querySelectorAll(".delete-btn").forEach((button) => {
+      // Attach delete event listeners to each delete button
+      const deleteButtons = document.querySelectorAll(".delete-btn");
+      deleteButtons.forEach((button) => {
         button.addEventListener("click", function () {
           const id = this.getAttribute("data-id");
-          deleteOutstation(id);
+          fetch(`/outstation/${id}`, {
+            method: "DELETE",
+          })
+            .then(() => {
+              console.log(`Deleted outstation record with ID: ${id}`);
+              // Refresh the outstation table
+              outstationTableBody.removeChild(row);
+            })
+            .catch((err) =>
+              console.error("Error deleting outstation record:", err)
+            );
         });
       });
-    });
-
-  function calculateDays(start, end) {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const timeDiff = Math.abs(endDate - startDate);
-    const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-    return diffDays;
-  }
-
-  function deleteOutstation(id) {
-    fetch(`/outstation/${id}`, {
-      method: "DELETE",
     })
-      .then((response) => {
-        if (response.ok) {
-          location.reload(); // Reload the page to get updated data
-        } else {
-          console.error("Failed to delete outstation");
-        }
-      })
-      .catch((error) => console.error("Error deleting outstation:", error));
-  }
+    .catch((err) => console.error("Error fetching outstation employees:", err));
 });
+
+// Helper function to calculate the number of days between two dates
+function calculateDays(startDate, endDate) {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const timeDiff = Math.abs(end - start);
+  return Math.ceil(timeDiff / (1000 * 3600 * 24)); // Convert milliseconds to days
+}
