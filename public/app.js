@@ -1,51 +1,66 @@
 document.addEventListener("DOMContentLoaded", function () {
-    fetchAttendanceData();
-
-    // Function to fetch attendance data
-    async function fetchAttendanceData() {
-        const response = await fetch("/attendance-data");
-        const data = await response.json();
-
-        const presentEmployeesTbody = document.getElementById("present-employees");
-        const outstationEmployeesTbody = document.getElementById("outstation-employees");
-
-        presentEmployeesTbody.innerHTML = "";
-        outstationEmployeesTbody.innerHTML = "";
-
-        data.forEach(entry => {
-            if (entry.status === "Present") {
-                presentEmployeesTbody.innerHTML += `
-                    <tr>
-                        <td>${entry.employee}</td>
-                        <td>${entry.check_in_time}</td>
-                        <td>${entry.back_time || "N/A"}</td>
-                    </tr>
+    fetch("/present")
+        .then((response) => response.json())
+        .then((data) => {
+            const presentTableBody = document.getElementById("present-employees");
+            presentTableBody.innerHTML = ""; // Clear previous entries
+            data.forEach((employee) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${employee.employee}</td>
+                    <td>${employee.check_in_time}</td>
+                    <td>${employee.back_time}</td>
                 `;
-            } else if (entry.status === "Outstation") {
-                const startDate = new Date(entry.start_date);
-                const endDate = new Date(entry.end_date);
-                const numberOfDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) || 0;
+                presentTableBody.appendChild(row);
+            });
+        })
+        .catch((err) => console.error("Error fetching present employees:", err));
 
-                outstationEmployeesTbody.innerHTML += `
-                    <tr>
-                        <td>${entry.employee}</td>
-                        <td>${entry.destination}</td>
-                        <td>${entry.start_date}</td>
-                        <td>${entry.end_date}</td>
-                        <td>${numberOfDays} days</td>
-                        <td><button onclick="deleteEntry(${entry.id})">Delete</button></td>
-                    </tr>
+    fetch("/outstation")
+        .then((response) => response.json())
+        .then((data) => {
+            const outstationTable = document.getElementById("outstation-employees");
+            data.forEach((outstation) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${outstation.employee}</td>
+                    <td>${outstation.destination}</td>
+                    <td>${outstation.start_date}</td>
+                    <td>${outstation.end_date}</td>
+                    <td>${calculateDays(outstation.start_date, outstation.end_date)}</td>
+                    <td><button class="delete-btn" data-id="${outstation.id}">Delete</button></td>
                 `;
-            }
+                outstationTable.appendChild(row);
+            });
+
+            // Add event listeners to delete buttons
+            document.querySelectorAll(".delete-btn").forEach((button) => {
+                button.addEventListener("click", function () {
+                    const id = this.getAttribute("data-id");
+                    deleteOutstation(id);
+                });
+            });
         });
+
+    function calculateDays(start, end) {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        const timeDiff = Math.abs(endDate - startDate);
+        const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        return diffDays;
     }
 
-    // Add delete function
-    window.deleteEntry = function(id) {
+    function deleteOutstation(id) {
         fetch(`/outstation/${id}`, {
             method: "DELETE",
         })
-        .then(() => fetchAttendanceData())
-        .catch(err => console.error("Error deleting outstation:", err));
-    };
+            .then((response) => {
+                if (response.ok) {
+                    location.reload(); // Reload the page to get updated data
+                } else {
+                    console.error("Failed to delete outstation");
+                }
+            })
+            .catch((error) => console.error("Error deleting outstation:", error));
+    }
 });
