@@ -52,8 +52,9 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(response => {
             if (response.ok) {
-                // Remove the deleted row from the table
                 location.reload(); // Reload the page to get updated data
+            } else {
+                console.error('Failed to delete outstation');
             }
         })
         .catch(error => console.error('Error deleting outstation:', error));

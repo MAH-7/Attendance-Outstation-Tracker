@@ -1,56 +1,61 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
+const bodyParser = require('body-parser');
 const path = require('path');
+const cron = require('node-cron'); // Import the node-cron library
 
 const app = express();
-const db = new sqlite3.Database('./database.db');
+const db = new sqlite3.Database(':memory:');
 
-// Middleware
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '/public')));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Create tables
+// Create a table for attendance
 db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS attendance (
+    db.run(`CREATE TABLE attendance (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        employee TEXT NOT NULL,
-        status TEXT NOT NULL,
+        employee TEXT,
+        status TEXT,
         destination TEXT,
-        start_date TEXT,
-        end_date TEXT
+        start_date DATE,
+        end_date DATE
     )`);
-});
-
-// Serve the index.html
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '/public/index.html'));
 });
 
 // Handle form submission
 app.post('/submit-attendance', (req, res) => {
     const { employee, status, destination, start_date, end_date } = req.body;
 
+    console.log("Received Data:", {
+        employee,
+        status,
+        destination,
+        start_date,
+        end_date
+    });
+
     db.run(`INSERT INTO attendance (employee, status, destination, start_date, end_date) VALUES (?, ?, ?, ?, ?)`,
         [employee, status, destination || null, start_date || null, end_date || null],
         function (err) {
             if (err) {
-                return console.error(err.message);
+                console.error(err.message);
+                return res.status(500).send("Database error");
             }
             res.redirect('/');
         }
     );
 });
 
-// Delete outstation record
-app.delete('/outstation/:id', (req, res) => {
-    const { id } = req.params;
-
-    db.run(`DELETE FROM attendance WHERE id = ?`, [id], function (err) {
+// Schedule a task to reset present employees at midnight every day
+cron.schedule('0 0 * * *', () => {
+    console.log('Resetting present employees...');
+    db.run(`DELETE FROM attendance WHERE status = 'Present'`, (err) => {
         if (err) {
-            return console.error(err.message);
+            console.error('Error resetting present employees:', err.message);
+        } else {
+            console.log('Successfully reset present employees.');
         }
-        res.status(204).send(); // No content response
     });
 });
 
@@ -66,7 +71,7 @@ app.get('/present', (req, res) => {
 
 // Get employees on outstation
 app.get('/outstation', (req, res) => {
-    db.all(`SELECT employee, destination, start_date, end_date FROM attendance WHERE status = 'Outstation'`, [], (err, rows) => {
+    db.all(`SELECT * FROM attendance WHERE status = 'Outstation'`, [], (err, rows) => {
         if (err) {
             throw err;
         }
@@ -74,8 +79,23 @@ app.get('/outstation', (req, res) => {
     });
 });
 
+// Delete outstation record
+app.delete('/outstation/:id', (req, res) => {
+    const { id } = req.params;
+
+    console.log("Delete Request for ID:", id);
+
+    db.run(`DELETE FROM attendance WHERE id = ?`, [id], function (err) {
+        if (err) {
+            console.error(err.message);
+            return res.status(500).send("Database error");
+        }
+        res.status(204).send();
+    });
+});
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
