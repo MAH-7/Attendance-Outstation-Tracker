@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Office Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Office Attendance & Outstation Tracker</h1>
+
+    <!-- Attendance Form -->
+    <section>
+        <h2>Submit Attendance or Outstation</h2>
+        <form id="attendance-form" action="/submit-attendance" method="POST">
+            <label for="employee">Employee Name:</label>
+            <input type="text" id="employee" name="employee" required>
+
+            <label for="status">Status:</label>
+            <select id="status" name="status" required>
+                <option value="Present">Present</option>
+                <option value="Outstation">Outstation</option>
+            </select>
+
+            <label for="destination">Destination (if outstation):</label>
+            <input type="text" id="destination" name="destination">
+
+            <label for="start-date">Start Date:</label>
+            <input type="date" id="start-date" name="start-date">
+
+            <label for="end-date">End Date:</label>
+            <input type="date" id="end-date" name="end-date">
+
+            <button type="submit">Submit</button>
+        </form>
+    </section>
+
+    <!-- Dashboard -->
+    <section>
+        <h2>Employees Present in Office</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Employee Name</th>
+                </tr>
+            </thead>
+            <tbody id="present-employees"></tbody>
+        </table>
+
+        <h2>Employees on Outstation</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Employee Name</th>
+                    <th>Destination</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Number of Days</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="outstation-employees"></tbody>
+        </table>
+    </section>
+
+    <script src="app.js"></script>
+</body>
+</html>
