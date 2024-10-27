@@ -88,7 +88,8 @@ app.post("/submit-attendance", (req, res) => {
 });
 
 // Schedule to reset present employees at midnight
-cron.schedule("0 0 * * *", () => {
+cron.schedule("5 1 * * *", () => {
+  console.log("Cron job triggered at midnight.");
   db.run(`DELETE FROM attendance WHERE status = 'Present'`, (err) => {
     if (err) {
       console.error("Error resetting present employees:", err.message);
@@ -96,6 +97,8 @@ cron.schedule("0 0 * * *", () => {
       console.log("Reset present employees.");
     }
   });
+}, {
+  timezone: "Asia/Kuala_Lumpur" // Set your local timezone
 });
 
 // Get employees present in the office
