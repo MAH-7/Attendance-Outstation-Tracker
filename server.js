@@ -150,9 +150,11 @@ app.delete("/outstation/:id", (req, res) => {
     [id],
     function (err) {
       if (err) {
-        res.status(500).send("Error deleting outstation record");
+        return res.status(500).send("Error deleting outstation record");
       } else {
-        res.status(200).send("Outstation record deleted successfully");
+        // Emit a deletion event
+        io.emit('deleteOutstation', { id });
+        return res.status(200).send("Outstation record deleted successfully");
       }
     }
   );
