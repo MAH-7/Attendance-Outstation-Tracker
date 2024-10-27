@@ -3,8 +3,12 @@ const sqlite3 = require("sqlite3").verbose();
 const bodyParser = require("body-parser");
 const path = require("path");
 const cron = require("node-cron");
+const http = require("http");
+const socketIo = require("socket.io"); // Require Socket.IO
 
 const app = express();
+const server = http.createServer(app); // Create HTTP server
+const io = socketIo(server); // Attach Socket.IO to the server
 const db = new sqlite3.Database(":memory:");
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -53,7 +57,7 @@ app.post("/submit-attendance", (req, res) => {
     const checkInDate = new Date();
     checkInDate.setHours(checkInHours, checkInMinutes, 0, 0);
 
-    const dayOfWeek = checkInDate.getDay(); // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+    const dayOfWeek = checkInDate.getDay(); // Get the day of the week
 
     // Set back time based on the day of the week
     if (dayOfWeek >= 0 && dayOfWeek <= 3) { // Sunday to Wednesday
@@ -61,7 +65,7 @@ app.post("/submit-attendance", (req, res) => {
     } else if (dayOfWeek === 4) { // Thursday
       checkInDate.setHours(checkInDate.getHours() + 7.5); // 7.5 hours for Thursday
     }
-    
+
     // Format the back time correctly in 12-hour format
     back_time = formatTo12Hour(checkInDate.toTimeString().split(" ")[0]);
   }
@@ -82,6 +86,19 @@ app.post("/submit-attendance", (req, res) => {
         console.error(err.message);
         return res.status(500).send("Database error");
       }
+      
+      // Emit the new attendance data to all connected clients
+      io.emit('newAttendance', {
+        employee,
+        status,
+        destination,
+        start_date,
+        end_date,
+        check_in_time,
+        back_time,
+        id: this.lastID // Send the ID of the newly inserted record
+      });
+
       res.redirect("/");
     }
   );
@@ -148,6 +165,6 @@ app.get("/", (req, res) => {
 
 // Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => { // Use server.listen for Socket.IO
   console.log(`Server running on port ${PORT}`);
 });
