@@ -63,7 +63,7 @@
           <input type="date" id="end-date" name="end_date" />
           <br>
           <label for="pin">PIN (4-digit number):</label>
-          <input type="text" id="pin" name="pin" placeholder="Enter 4-digit PIN" maxlength="4" required />
+          <input type="text" id="pin" name="pin" placeholder="Enter 4-digit PIN" maxlength="4" pattern="^\d{4}$" required />
         </div>
 
         <button type="submit">Submit</button>
