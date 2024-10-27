@@ -81,14 +81,25 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function deleteOutstation(id) {
-    fetch(`/outstation/${id}`, {
-      method: "DELETE",
-    }).then((response) => {
-      if (response.ok) {
-        // No need to call fetchData here since the socket will handle it
-      } else {
-        alert("Failed to delete outstation record.");
-      }
-    });
+    const pin = prompt("Enter your 4-digit PIN to confirm deletion:"); // Prompt for PIN
+
+    if (pin && /^\d{4}$/.test(pin)) {
+      // Validate PIN format (4 digits)
+      fetch(`/outstation/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ pin }), // Send the PIN in the request body
+      }).then((response) => {
+        if (response.ok) {
+          // No need to call fetchData here since the socket will handle it
+        } else {
+          alert("Failed to delete outstation record: " + response.statusText);
+        }
+      });
+    } else {
+      alert("Please enter a valid 4-digit PIN.");
+    }
   }
 });

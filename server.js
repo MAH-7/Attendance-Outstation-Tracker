@@ -25,7 +25,8 @@ db.serialize(() => {
     start_date DATE,
     end_date DATE,
     check_in_time TIME,
-    back_time TIME
+    back_time TIME,
+    pin INTEGER
   )`);
 });
 
@@ -39,7 +40,15 @@ function formatTo12Hour(time) {
 
 // Handle form submission
 app.post("/submit-attendance", (req, res) => {
-  const { employee, status, destination, start_date, end_date, check_in_time } = req.body;
+  const {
+    employee,
+    status,
+    destination,
+    start_date,
+    end_date,
+    check_in_time,
+    pin,
+  } = req.body;
 
   console.log("Received Data:", {
     employee,
@@ -60,9 +69,11 @@ app.post("/submit-attendance", (req, res) => {
     const dayOfWeek = checkInDate.getDay(); // Get the day of the week
 
     // Set back time based on the day of the week
-    if (dayOfWeek >= 0 && dayOfWeek <= 3) { // Sunday to Wednesday
+    if (dayOfWeek >= 0 && dayOfWeek <= 3) {
+      // Sunday to Wednesday
       checkInDate.setHours(checkInDate.getHours() + 9); // 9 hours for Sun-Wed
-    } else if (dayOfWeek === 4) { // Thursday
+    } else if (dayOfWeek === 4) {
+      // Thursday
       checkInDate.setHours(checkInDate.getHours() + 7.5); // 7.5 hours for Thursday
     }
 
@@ -71,7 +82,7 @@ app.post("/submit-attendance", (req, res) => {
   }
 
   db.run(
-    `INSERT INTO attendance (employee, status, destination, start_date, end_date, check_in_time, back_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO attendance (employee, status, destination, start_date, end_date, check_in_time, back_time, pin) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       employee,
       status,
@@ -80,15 +91,16 @@ app.post("/submit-attendance", (req, res) => {
       end_date || null,
       status === "Present" ? check_in_time : null, // Only set check_in_time for Present
       back_time,
+      status === "Outstation" ? pin : null, // Only set pin for Outstation
     ],
     function (err) {
       if (err) {
         console.error(err.message);
         return res.status(500).send("Database error");
       }
-      
+
       // Emit the new attendance data to all connected clients
-      io.emit('newAttendance', {
+      io.emit("newAttendance", {
         employee,
         status,
         destination,
@@ -96,7 +108,7 @@ app.post("/submit-attendance", (req, res) => {
         end_date,
         check_in_time,
         back_time,
-        id: this.lastID // Send the ID of the newly inserted record
+        id: this.lastID, // Send the ID of the newly inserted record
       });
 
       res.redirect("/");
@@ -105,18 +117,22 @@ app.post("/submit-attendance", (req, res) => {
 });
 
 // Schedule to reset present employees at midnight
-cron.schedule("11 1 * * *", () => {
-  console.log("Cron job triggered at midnight.");
-  db.run(`DELETE FROM attendance WHERE status = 'Present'`, (err) => {
-    if (err) {
-      console.error("Error resetting present employees:", err.message);
-    } else {
-      console.log("Reset present employees.");
-    }
-  });
-}, {
-  timezone: "Asia/Kuala_Lumpur" // Set your local timezone
-});
+cron.schedule(
+  "11 1 * * *",
+  () => {
+    console.log("Cron job triggered at midnight.");
+    db.run(`DELETE FROM attendance WHERE status = 'Present'`, (err) => {
+      if (err) {
+        console.error("Error resetting present employees:", err.message);
+      } else {
+        console.log("Reset present employees.");
+      }
+    });
+  },
+  {
+    timezone: "Asia/Kuala_Lumpur", // Set your local timezone
+  }
+);
 
 // Get employees present in the office
 app.get("/present", (req, res) => {
@@ -145,19 +161,32 @@ app.get("/outstation", (req, res) => {
 // Delete outstation entry by ID
 app.delete("/outstation/:id", (req, res) => {
   const id = req.params.id;
-  db.run(
-    `DELETE FROM attendance WHERE id = ? AND status = 'Outstation'`,
-    [id],
-    function (err) {
-      if (err) {
-        return res.status(500).send("Error deleting outstation record");
-      } else {
-        // Emit a deletion event
-        io.emit('deleteOutstation', { id });
-        return res.status(200).send("Outstation record deleted successfully");
-      }
+  const { pin } = req.body; // Get the PIN from the request body
+
+  // Fetch the outstation entry to verify the PIN
+  db.get(`SELECT pin FROM attendance WHERE id = ?`, [id], (err, row) => {
+    if (err || !row) {
+      return res.status(500).send("Error fetching outstation record");
     }
-  );
+
+    if (row.pin != pin) { // Compare the provided PIN with the stored PIN
+      return res.status(403).send("Invalid PIN"); // If the PIN is incorrect
+    }
+
+    db.run(
+      `DELETE FROM attendance WHERE id = ? AND status = 'Outstation'`,
+      [id],
+      function (err) {
+        if (err) {
+          return res.status(500).send("Error deleting outstation record");
+        } else {
+          // Emit a deletion event
+          io.emit('deleteOutstation', { id });
+          return res.status(200).send("Outstation record deleted successfully");
+        }
+      }
+    );
+  });
 });
 
 // Serve the HTML file
@@ -167,6 +196,7 @@ app.get("/", (req, res) => {
 
 // Start the server
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => { // Use server.listen for Socket.IO
+server.listen(PORT, () => {
+  // Use server.listen for Socket.IO
   console.log(`Server running on port ${PORT}`);
 });
