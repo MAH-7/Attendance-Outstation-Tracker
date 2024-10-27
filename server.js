@@ -88,7 +88,7 @@ app.post("/submit-attendance", (req, res) => {
 });
 
 // Schedule to reset present employees at midnight
-cron.schedule("5 1 * * *", () => {
+cron.schedule("11 1 * * *", () => {
   console.log("Cron job triggered at midnight.");
   db.run(`DELETE FROM attendance WHERE status = 'Present'`, (err) => {
     if (err) {
