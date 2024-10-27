@@ -26,7 +26,7 @@ db.serialize(() => {
     end_date DATE,
     check_in_time TIME,
     back_time TIME,
-    pin INTEGER
+    pin TEXT
   )`);
 });
 
