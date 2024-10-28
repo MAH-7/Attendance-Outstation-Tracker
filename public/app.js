@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const startDate = new Date(start);
     const endDate = new Date(end);
     const timeDiff = Math.abs(endDate - startDate);
-    return Math.ceil(timeDiff / (1000 * 3600 * 24)) + " days";
+    return Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1 + " days";
   }
 
   function deleteOutstation(id) {
