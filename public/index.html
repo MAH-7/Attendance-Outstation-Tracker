@@ -43,12 +43,12 @@
 
         <label for="status">Status:</label>
         <select id="status" name="status" required>
-          <option value="Present">Present</option>
+          <option value="Present">In Office</option>
           <option value="Outstation">Outstation</option>
         </select>
 
         <div id="check-in-time">
-          <label for="check_in_time">Check-in Time:</label>
+          <label for="check_in_time">Clock-in Time:</label>
           <input type="time" id="check_in_time" name="check_in_time" />
         </div>
 
@@ -71,19 +71,19 @@
     </section>
 
     <section>
-      <h2>Employees Present in Office</h2>
+      <h2>Employees In Office</h2>
       <table>
         <thead>
           <tr>
             <th>Employee</th>
-            <th>Check-In Time</th>
-            <th>Check-Out Time</th>
+            <th>Clock-In Time</th>
+            <th>Clock-Out Time</th>
           </tr>
         </thead>
         <tbody id="present-employees"></tbody>
       </table>
 
-      <h2>Employees on Outstation</h2>
+      <h2>Employees On Outstation</h2>
       <table>
         <thead>
           <tr>
