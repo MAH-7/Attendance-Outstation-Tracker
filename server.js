@@ -66,6 +66,15 @@ if (status === "Present" && check_in_time) {
   const checkInDate = new Date();
   checkInDate.setHours(checkInHours, checkInMinutes, 0, 0);
 
+  // Set office start time at 7:30 AM
+  const officeStartTime = new Date(checkInDate);
+  officeStartTime.setHours(7, 30, 0, 0); // 7:30 AM
+
+  // If check-in time is earlier than 7:30 AM, adjust to 7:30 AM
+  if (checkInDate < officeStartTime) {
+    checkInDate.setHours(7, 30, 0, 0); // Set check-in time to 7:30 AM
+  }
+
   const dayOfWeek = checkInDate.getDay(); // Get the day of the week
 
   // Calculate back time based on the day of the week
@@ -82,6 +91,7 @@ if (status === "Present" && check_in_time) {
     `${checkInDate.getHours()}:${checkInDate.getMinutes() < 10 ? "0" + checkInDate.getMinutes() : checkInDate.getMinutes()}`
   );
 }
+
 
 
   db.run(
