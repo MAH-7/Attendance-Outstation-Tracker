@@ -59,27 +59,30 @@ app.post("/submit-attendance", (req, res) => {
     check_in_time,
   });
 
-  // Calculate back time based on check-in time
-  let back_time = null;
-  if (status === "Present" && check_in_time) {
-    const [checkInHours, checkInMinutes] = check_in_time.split(":").map(Number);
-    const checkInDate = new Date();
-    checkInDate.setHours(checkInHours, checkInMinutes, 0, 0);
+// Calculate back time based on check-in time
+let back_time = null;
+if (status === "Present" && check_in_time) {
+  const [checkInHours, checkInMinutes] = check_in_time.split(":").map(Number);
+  const checkInDate = new Date();
+  checkInDate.setHours(checkInHours, checkInMinutes, 0, 0);
 
-    const dayOfWeek = checkInDate.getDay(); // Get the day of the week
+  const dayOfWeek = checkInDate.getDay(); // Get the day of the week
 
-    // Set back time based on the day of the week
-    if (dayOfWeek >= 0 && dayOfWeek <= 3) {
-      // Sunday to Wednesday
-      checkInDate.setHours(checkInDate.getHours() + 9); // 9 hours for Sun-Wed
-    } else if (dayOfWeek === 4) {
-      // Thursday
-      checkInDate.setHours(checkInDate.getHours() + 7.5); // 7.5 hours for Thursday
-    }
-
-    // Format the back time correctly in 12-hour format
-    back_time = formatTo12Hour(checkInDate.toTimeString().split(" ")[0]);
+  // Calculate back time based on the day of the week
+  if (dayOfWeek >= 0 && dayOfWeek <= 3) {
+    // Sunday to Wednesday
+    checkInDate.setHours(checkInDate.getHours() + 9); // 9 hours for Sun-Wed
+  } else if (dayOfWeek === 4) {
+    // Thursday
+    checkInDate.setHours(checkInDate.getHours() + 7, checkInDate.getMinutes() + 30); // 7.5 hours for Thursday
   }
+
+  // Format the back time correctly in 12-hour format
+  back_time = formatTo12Hour(
+    `${checkInDate.getHours()}:${checkInDate.getMinutes() < 10 ? "0" + checkInDate.getMinutes() : checkInDate.getMinutes()}`
+  );
+}
+
 
   db.run(
     `INSERT INTO attendance (employee, status, destination, start_date, end_date, check_in_time, back_time, pin) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
