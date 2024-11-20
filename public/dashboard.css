@@ -86,15 +86,273 @@ td {
 }
 
 .clock {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%) translateY(-50%);
   color: white;
   background-color: #3498db;
-  font-size: 60px;
+  font-size: 20px;
   font-family: sans-serif;
-  letter-spacing: 7px;
-  margin-top: 100px;
-  padding: 10px 20px;
-  border-radius: 10px;
+  letter-spacing: 3px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  position: relative;
+  margin: 20px auto 0;
+  width: max-content;
+  font-weight: bold;
+  border: 1px solid #bdc3c7;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Radio */
+
+.d-flex {
+  display: flex;
+  gap: 10px;
+}
+
+.WPLw-elem {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  background-color: #fdfdfd;
+  color: #393939;
+  height: 74px;
+  width: 10%;
+  border-radius: 8px;
+  overflow: hidden;
+  -webkit-transition: all 0.3s;
+  transition: all 0.3s;
+}
+.WPLw-elem * {
+  box-sizing: border-box;
+}
+.WPLw-elem__img {
+  width: 74px;
+  height: 74px;
+  -ms-flex-negative: 0;
+  flex-shrink: 0;
+}
+.WPLw-elem__img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  -o-object-fit: cover;
+  object-fit: cover;
+}
+.WPLw-elem__content {
+  -webkit-box-flex: 1;
+  -ms-flex-positive: 1;
+  flex-grow: 1;
+  min-width: 1px;
+  max-width: 100%;
+  padding: 12px;
+  position: relative;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+}
+.WPLw-elem__player {
+  width: 100%;
+  height: 100%;
+}
+.WPLw-elem__player-body {
+  padding: 16px 0;
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: 76px;
+  height: 100%;
+  width: calc(100% - 108px);
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+}
+.WPLw-elem__player-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+@media (max-width: 400px) {
+  .WPLw-elem__player-title {
+    font-size: 12px;
+  }
+}
+.WPLw-elem__player-title a {
+  color: inherit;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s;
+}
+.WPLw-elem__player-title a:hover {
+  opacity: 0.85;
+}
+.WPLplayer-styled .mejs__container {
+  height: 100% !important;
+  width: 100% !important;
+  background: 0 0;
+}
+.WPLplayer-styled .mejs__container:focus {
+  outline: 0;
+}
+.WPLplayer-styled .mejs__button > button {
+  margin: 0;
+}
+.WPLplayer-styled .mejs__play > button {
+  background: #fb0
+    url(https://online-radio.my/templates/my/images/play-mejs.svg) no-repeat 50%
+    50%;
+}
+.WPLplayer-styled .mejs__pause > button {
+  background: #c68f04
+    url(https://online-radio.my/templates/my/images/pause-mejs.svg) no-repeat
+    50% 50%;
+}
+.WPLplayer-styled .mejs__replay > button {
+  background: #fb0
+    url(https://online-radio.my/templates/my/images/replay-mejs.svg) no-repeat
+    50% 50%;
+}
+.WPLplayer-styled .mejs__playpause-button {
+  margin-right: 16px;
+}
+.WPLplayer-styled .mejs__time-buffering,
+.WPLplayer-styled .mejs__time-rail {
+  border-radius: 50%;
+}
+.WPLplayer-styled .mejs__time-rail {
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  padding: 0;
+  margin: 0;
+  pointer-events: none;
+}
+.WPLplayer-styled .mejs__time-total {
+  margin: 0;
+  background: 0 0;
+}
+.WPLplayer-styled .mejs__time-buffering {
+  background: #c68f04;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+  position: relative;
+  -webkit-animation: none;
+  animation: none;
+}
+.WPLplayer-styled .mejs__time-buffering:after {
+  content: "";
+  background: url(https://online-radio.my/templates/my/images/loading.svg)
+    no-repeat 0 0 / contain;
+  will-change: transform;
+  -webkit-animation: WPLrotateBuffer 1.5s linear infinite;
+  animation: WPLrotateBuffer 1.5s linear infinite;
+}
+.WPLplayer-styled .mejs__time-current,
+.WPLplayer-styled .mejs__time-float,
+.WPLplayer-styled .mejs__time-handle,
+.WPLplayer-styled .mejs__time-loaded {
+  display: none;
+}
+.WPLplayer-styled_v2 {
+  width: 100%;
+}
+.WPLplayer-styled_v2,
+.WPLplayer-styled_v2 .mejs__controls,
+.WPLplayer-styled_v2 .mejs__playpause-button,
+.WPLplayer-styled_v2 .mejs__playpause-button > button {
+  height: 48px;
+}
+.WPLplayer-styled_v2 .mejs__playpause-button,
+.WPLplayer-styled_v2 .mejs__playpause-button > button {
+  width: 48px;
+  border-radius: 50%;
+}
+.WPLplayer-styled_v2 .mejs__controls {
+  width: 100%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  background: 0 0 !important;
+  padding: 0;
+}
+.WPLplayer-styled_v2 .mejs__volume-button {
+  margin-left: auto;
+}
+.WPLplayer-styled_v2 .mejs__volume-button > button {
+  display: none;
+}
+.WPLplayer-styled_v2 .mejs__play > button {
+  background-size: 18px 18px;
+}
+.WPLplayer-styled_v2 .mejs__pause > button {
+  background-size: 24px 24px;
+}
+.WPLplayer-styled_v2 .mejs__time-buffering {
+  width: 50px;
+  height: 50px;
+}
+.WPLplayer-styled_v2 .mejs__time-buffering:after {
+  width: 25px;
+  height: 25px;
+}
+.WPLplayer-styled_v2 .mejs__volume-slider {
+  display: block !important;
+  bottom: 0 !important;
+  background: 0 0 !important;
+}
+.WPLplayer-styled_v2 .mejs__volume-total {
+  top: 0;
+  background-color: rgba(57, 57, 57, 0.1);
+  border: none;
+}
+.WPLplayer-styled_v2 .mejs__volume-button,
+.WPLplayer-styled_v2 .mejs__volume-slider,
+.WPLplayer-styled_v2 .mejs__volume-total {
+  height: 42px !important;
+  width: 8px !important;
+  border-radius: 2px !important;
+}
+.WPLplayer-styled_v2 .mejs__volume-current {
+  background: #393939;
+}
+.WPLplayer-styled_v2 .mejs__volume-handle {
+  display: none;
+}
+@-webkit-keyframes WPLrotateBuffer {
+  to {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+@keyframes WPLrotateBuffer {
+  to {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
 }
