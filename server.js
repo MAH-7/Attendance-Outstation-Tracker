@@ -59,40 +59,45 @@ app.post("/submit-attendance", (req, res) => {
     check_in_time,
   });
 
-// Calculate back time based on check-in time
-let back_time = null;
-if (status === "Present" && check_in_time) {
-  const [checkInHours, checkInMinutes] = check_in_time.split(":").map(Number);
-  const checkInDate = new Date();
-  checkInDate.setHours(checkInHours, checkInMinutes, 0, 0);
+  // Calculate back time based on check-in time
+  let back_time = null;
+  if (status === "Present" && check_in_time) {
+    const [checkInHours, checkInMinutes] = check_in_time.split(":").map(Number);
+    const checkInDate = new Date();
+    checkInDate.setHours(checkInHours, checkInMinutes, 0, 0);
 
-  // Set office start time at 7:30 AM
-  const officeStartTime = new Date(checkInDate);
-  officeStartTime.setHours(7, 30, 0, 0); // 7:30 AM
+    // Set office start time at 7:30 AM
+    const officeStartTime = new Date(checkInDate);
+    officeStartTime.setHours(7, 30, 0, 0); // 7:30 AM
 
-  // If check-in time is earlier than 7:30 AM, adjust to 7:30 AM
-  if (checkInDate < officeStartTime) {
-    checkInDate.setHours(7, 30, 0, 0); // Set check-in time to 7:30 AM
+    // If check-in time is earlier than 7:30 AM, adjust to 7:30 AM
+    if (checkInDate < officeStartTime) {
+      checkInDate.setHours(7, 30, 0, 0); // Set check-in time to 7:30 AM
+    }
+
+    const dayOfWeek = checkInDate.getDay(); // Get the day of the week
+
+    // Calculate back time based on the day of the week
+    if (dayOfWeek >= 0 && dayOfWeek <= 3) {
+      // Sunday to Wednesday
+      checkInDate.setHours(checkInDate.getHours() + 9); // 9 hours for Sun-Wed
+    } else if (dayOfWeek === 4) {
+      // Thursday
+      checkInDate.setHours(
+        checkInDate.getHours() + 7,
+        checkInDate.getMinutes() + 30
+      ); // 7.5 hours for Thursday
+    }
+
+    // Format the back time correctly in 12-hour format
+    back_time = formatTo12Hour(
+      `${checkInDate.getHours()}:${
+        checkInDate.getMinutes() < 10
+          ? "0" + checkInDate.getMinutes()
+          : checkInDate.getMinutes()
+      }`
+    );
   }
-
-  const dayOfWeek = checkInDate.getDay(); // Get the day of the week
-
-  // Calculate back time based on the day of the week
-  if (dayOfWeek >= 0 && dayOfWeek <= 3) {
-    // Sunday to Wednesday
-    checkInDate.setHours(checkInDate.getHours() + 9); // 9 hours for Sun-Wed
-  } else if (dayOfWeek === 4) {
-    // Thursday
-    checkInDate.setHours(checkInDate.getHours() + 7, checkInDate.getMinutes() + 30); // 7.5 hours for Thursday
-  }
-
-  // Format the back time correctly in 12-hour format
-  back_time = formatTo12Hour(
-    `${checkInDate.getHours()}:${checkInDate.getMinutes() < 10 ? "0" + checkInDate.getMinutes() : checkInDate.getMinutes()}`
-  );
-}
-
-
 
   db.run(
     `INSERT INTO attendance (employee, status, destination, start_date, end_date, check_in_time, back_time, pin) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -182,7 +187,8 @@ app.delete("/outstation/:id", (req, res) => {
       return res.status(500).send("Error fetching outstation record");
     }
 
-    if (row.pin !== pin && pin !== '9999') { // Compare the provided PIN with the stored PIN
+    if (row.pin !== pin && pin !== "9999") {
+      // Compare the provided PIN with the stored PIN
       return res.status(403).send("Invalid PIN"); // If the PIN is incorrect
     }
 
@@ -194,7 +200,7 @@ app.delete("/outstation/:id", (req, res) => {
           return res.status(500).send("Error deleting outstation record");
         } else {
           // Emit a deletion event
-          io.emit('deleteOutstation', { id });
+          io.emit("deleteOutstation", { id });
           return res.status(200).send("Outstation record deleted successfully");
         }
       }

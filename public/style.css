@@ -1,13 +1,14 @@
 /* Global Styles */
 body {
-  font-family: 'Arial', sans-serif;
+  font-family: "Arial", sans-serif;
   margin: 0;
   padding: 20px;
   background-color: #f4f7f9;
   color: #333;
 }
 
-h1, h2 {
+h1,
+h2 {
   text-align: center;
   color: #2c3e50;
 }
@@ -60,6 +61,24 @@ button {
 }
 
 button:hover {
+  background-color: #2980b9;
+}
+
+.link {
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid #bdc3c7;
+  border-radius: 4px;
+  font-size: 16px;
+  background-color: #3498db;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  text-decoration: none;
+}
+
+.link:hover {
   background-color: #2980b9;
 }
 

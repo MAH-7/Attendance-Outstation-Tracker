@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>JPKTimur Tracker</title>
     <link rel="stylesheet" href="style.css" />
     <script src="/socket.io/socket.io.js"></script>
@@ -17,7 +20,7 @@
           checkInTime.style.display = "block";
           destinationFields.style.display = "none";
           pinInput.required = false; // Remove required when "Present"
-          pinInput.value = ''; // Clear PIN input
+          pinInput.value = ""; // Clear PIN input
         } else if (status === "Outstation") {
           checkInTime.style.display = "none";
           destinationFields.style.display = "block";
@@ -34,12 +37,19 @@
     </script>
   </head>
   <body>
+    <a href="./dashboard.html" class="link">Dashboard</a>
     <h1>JPKTimur Attendance & Outstation Tracker</h1>
     <section>
       <h2>Submit Attendance or Outstation</h2>
       <form id="attendance-form" action="/submit-attendance" method="POST">
         <label for="employee">Employee Name:</label>
-        <input type="text" id="employee" name="employee" placeholder="Your Name" required />
+        <input
+          type="text"
+          id="employee"
+          name="employee"
+          placeholder="Your Name"
+          required
+        />
 
         <label for="status">Status:</label>
         <select id="status" name="status" required>
@@ -52,18 +62,31 @@
           <input type="time" id="check_in_time" name="check_in_time" />
         </div>
 
-        <div id="destination-fields" style="display: none;">
+        <div id="destination-fields" style="display: none">
           <label for="destination">Destination (for Outstation):</label>
-          <input type="text" id="destination" name="destination" placeholder="Destination" />
-          <br>
+          <input
+            type="text"
+            id="destination"
+            name="destination"
+            placeholder="Destination"
+          />
+          <br />
           <label for="start-date">Start Date:</label>
           <input type="date" id="start-date" name="start_date" />
-          <br>
+          <br />
           <label for="end-date">End Date:</label>
           <input type="date" id="end-date" name="end_date" />
-          <br>
+          <br />
           <label for="pin">PIN (4-digit number):</label>
-          <input type="text" id="pin" name="pin" placeholder="Enter 4-digit PIN" maxlength="4" pattern="^\d{4}$" required />
+          <input
+            type="text"
+            id="pin"
+            name="pin"
+            placeholder="Enter 4-digit PIN"
+            maxlength="4"
+            pattern="^\d{4}$"
+            required
+          />
         </div>
 
         <button type="submit">Submit</button>
