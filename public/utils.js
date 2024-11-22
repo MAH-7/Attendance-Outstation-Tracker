@@ -1,5 +1,4 @@
 // Radio
-
 async function postData(url = "", data = {}) {
   const response = await fetch(url, {
     method: "POST",
@@ -76,3 +75,5 @@ function showTime() {
 }
 
 showTime();
+
+const test = 'hello'

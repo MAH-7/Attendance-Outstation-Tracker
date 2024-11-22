@@ -4,11 +4,12 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const cron = require("node-cron");
 const http = require("http");
-const socketIo = require("socket.io"); // Require Socket.IO
+const socketIo = require("socket.io");
+const moment = require("moment-timezone"); // Require moment-timezone
 
 const app = express();
-const server = http.createServer(app); // Create HTTP server
-const io = socketIo(server); // Attach Socket.IO to the server
+const server = http.createServer(app);
+const io = socketIo(server);
 const db = new sqlite3.Database(":memory:");
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -27,6 +28,16 @@ db.serialize(() => {
     check_in_time TIME,
     back_time TIME,
     pin TEXT
+  )`);
+});
+
+// Create notice table
+db.serialize(() => {
+  db.run(`CREATE TABLE notice (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    content TEXT,
+    notice_date DATE
   )`);
 });
 
@@ -62,41 +73,29 @@ app.post("/submit-attendance", (req, res) => {
   // Calculate back time based on check-in time
   let back_time = null;
   if (status === "Present" && check_in_time) {
-    const [checkInHours, checkInMinutes] = check_in_time.split(":").map(Number);
-    const checkInDate = new Date();
-    checkInDate.setHours(checkInHours, checkInMinutes, 0, 0);
+    const checkInDate = moment.tz(check_in_time, "HH:mm", "Asia/Kuala_Lumpur");
 
     // Set office start time at 7:30 AM
-    const officeStartTime = new Date(checkInDate);
-    officeStartTime.setHours(7, 30, 0, 0); // 7:30 AM
+    const officeStartTime = moment.tz("07:30", "HH:mm", "Asia/Kuala_Lumpur");
 
     // If check-in time is earlier than 7:30 AM, adjust to 7:30 AM
-    if (checkInDate < officeStartTime) {
-      checkInDate.setHours(7, 30, 0, 0); // Set check-in time to 7:30 AM
+    if (checkInDate.isBefore(officeStartTime)) {
+      checkInDate.set({ hour: 7, minute: 30 });
     }
 
-    const dayOfWeek = checkInDate.getDay(); // Get the day of the week
+    const dayOfWeek = checkInDate.day(); // Get the day of the week
 
     // Calculate back time based on the day of the week
     if (dayOfWeek >= 0 && dayOfWeek <= 3) {
       // Sunday to Wednesday
-      checkInDate.setHours(checkInDate.getHours() + 9); // 9 hours for Sun-Wed
+      checkInDate.add(9, "hours"); // 9 hours for Sun-Wed
     } else if (dayOfWeek === 4) {
       // Thursday
-      checkInDate.setHours(
-        checkInDate.getHours() + 7,
-        checkInDate.getMinutes() + 30
-      ); // 7.5 hours for Thursday
+      checkInDate.add(7, "hours").add(30, "minutes"); // 7.5 hours for Thursday
     }
 
     // Format the back time correctly in 12-hour format
-    back_time = formatTo12Hour(
-      `${checkInDate.getHours()}:${
-        checkInDate.getMinutes() < 10
-          ? "0" + checkInDate.getMinutes()
-          : checkInDate.getMinutes()
-      }`
-    );
+    back_time = checkInDate.format("h:mm A");
   }
 
   db.run(
@@ -107,9 +106,9 @@ app.post("/submit-attendance", (req, res) => {
       destination || null,
       start_date || null,
       end_date || null,
-      status === "Present" ? check_in_time : null, // Only set check_in_time for Present
+      status === "Present" ? check_in_time : null,
       back_time,
-      status === "Outstation" ? pin : null, // Only set pin for Outstation
+      status === "Outstation" ? pin : null,
     ],
     function (err) {
       if (err) {
@@ -117,7 +116,6 @@ app.post("/submit-attendance", (req, res) => {
         return res.status(500).send("Database error");
       }
 
-      // Emit the new attendance data to all connected clients
       io.emit("newAttendance", {
         employee,
         status,
@@ -126,13 +124,50 @@ app.post("/submit-attendance", (req, res) => {
         end_date,
         check_in_time,
         back_time,
-        id: this.lastID, // Send the ID of the newly inserted record
+        id: this.lastID,
       });
 
       res.redirect("/");
     }
   );
 });
+
+// Handle form submission for notice board
+app.post("/submit-notice", (req, res) => {
+  let { title, content, notice_date } = req.body;
+
+  console.log("Received Data:", {
+    title,
+    content,
+    notice_date,
+  });
+
+  // Format the notice_date to only display day and month
+  notice_date = moment(notice_date).format("DD MMMM");
+
+  db.run(
+    `INSERT INTO notice (title, content, notice_date) VALUES (?, ?, ?)`,
+    [title, content, notice_date],
+    function (err) {
+      if (err) {
+        console.error(err.message);
+        return res.status(500).send("Database error");
+      }
+
+      io.emit("newNotice", {
+        title,
+        content,
+        notice_date,
+        id: this.lastID,
+      });
+
+      res.redirect("/");
+    }
+  );
+});
+
+
+
 
 // Schedule to reset present employees at midnight
 cron.schedule(
@@ -148,7 +183,7 @@ cron.schedule(
     });
   },
   {
-    timezone: "Asia/Kuala_Lumpur", // Set your local timezone
+    timezone: "Asia/Kuala_Lumpur",
   }
 );
 
@@ -176,20 +211,26 @@ app.get("/outstation", (req, res) => {
   );
 });
 
+// Get notices from the notice board
+app.get("/notice", (req, res) => {
+  db.all(`SELECT * FROM notice`, [], (err, rows) => {
+    if (err) throw err;
+    res.json(rows);
+  });
+});
+
 // Delete outstation entry by ID
 app.delete("/outstation/:id", (req, res) => {
   const id = req.params.id;
-  const { pin } = req.body; // Get the PIN from the request body
+  const { pin } = req.body;
 
-  // Fetch the outstation entry to verify the PIN
   db.get(`SELECT pin FROM attendance WHERE id = ?`, [id], (err, row) => {
     if (err || !row) {
       return res.status(500).send("Error fetching outstation record");
     }
 
     if (row.pin !== pin && pin !== "9999") {
-      // Compare the provided PIN with the stored PIN
-      return res.status(403).send("Invalid PIN"); // If the PIN is incorrect
+      return res.status(403).send("Invalid PIN");
     }
 
     db.run(
@@ -199,7 +240,6 @@ app.delete("/outstation/:id", (req, res) => {
         if (err) {
           return res.status(500).send("Error deleting outstation record");
         } else {
-          // Emit a deletion event
           io.emit("deleteOutstation", { id });
           return res.status(200).send("Outstation record deleted successfully");
         }
@@ -208,14 +248,31 @@ app.delete("/outstation/:id", (req, res) => {
   });
 });
 
+// Delete notice by ID
+app.delete("/notice/:id", (req, res) => {
+  const id = req.params.id;
+  db.run(`DELETE FROM notice WHERE id = ?`, [id], function (err) {
+    if (err) {
+      return res.status(500).send("Error deleting notice");
+    } else {
+      io.emit("deleteNotice", { id });
+      return res.status(200).send("Notice deleted successfully");
+    }
+  });
+});
+
 // Serve the HTML file
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public/index.html"));
 });
 
+// Serve the dashboard file
+app.get("/dashboard", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/dashboard.html"));
+});
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  // Use server.listen for Socket.IO
   console.log(`Server running on port ${PORT}`);
 });

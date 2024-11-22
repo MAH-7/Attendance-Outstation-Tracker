@@ -9,8 +9,19 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchData(); // Fetch all data when a new attendance entry is submitted
   });
 
+  // listen for new notice data
+  socket.on("newNotice", () => {
+    fetchData(); // Fetch all data when a new notice is submitted
+  });
+
   // Listen for deletion of outstation records
   socket.on("deleteOutstation", (data) => {
+    // Re-fetch data after deletion
+    fetchData();
+  });
+
+  // Listen for deletion of notice records
+  socket.on("deleteNotice", (data) => {
     // Re-fetch data after deletion
     fetchData();
   });
@@ -26,6 +37,12 @@ document.addEventListener("DOMContentLoaded", function () {
       .then((response) => response.json())
       .then((data) => {
         updateOutstationTable(data);
+      });
+
+    fetch("/notice")
+      .then((response) => response.json())
+      .then((data) => {
+        updateNoticeTable(data);
       });
   }
 
@@ -72,6 +89,35 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
   }
+  
+  function updateNoticeTable(data) {
+    const noticeTableContainer = document.getElementById("notice-board-container");
+    noticeTableContainer.innerHTML = ""; // Clear previous entries
+  
+    data.forEach((notice) => {
+      const noticeCard = document.createElement("div");
+      noticeCard.classList.add("notice-board");
+      noticeCard.innerHTML = `
+      <h3 class="notice-date">${notice.notice_date}</h3>
+      <div class="notice-content">
+      <button class="delete-btn-notice" data-id="${notice.id}">&times;</button>
+          <h3>${notice.title}</h3>
+          <p>${notice.content}</p>
+        </div>
+      `;
+  
+      noticeTableContainer.appendChild(noticeCard);
+    });
+  
+    // Add event listeners to delete buttons
+    document.querySelectorAll(".delete-btn-notice").forEach((button) => {
+      button.addEventListener("click", function () {
+        const id = this.getAttribute("data-id");
+        deleteNotice(id);
+      });
+    });
+  }
+  
 
   function calculateDays(start, end) {
     const startDate = new Date(start);
@@ -101,5 +147,17 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       alert("Please enter a valid 4-digit PIN.");
     }
+  }
+
+  function deleteNotice(id) {
+    fetch(`/notice/${id}`, {
+      method: "DELETE",
+    }).then((response) => {
+      if (response.ok) {
+        // No need to call fetchData here since the socket will handle it
+      } else {
+        alert("Failed to delete notice: " + response.statusText);
+      }
+    });
   }
 });

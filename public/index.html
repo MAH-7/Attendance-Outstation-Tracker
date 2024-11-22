@@ -91,6 +91,32 @@
 
         <button type="submit">Submit</button>
       </form>
+      <h2>Submit Notice Board</h2>
+      <form id="notice-form" action="/submit-notice" method="POST">
+        <label for="title">Title:</label>
+        <input
+          type="text"
+          id="title"
+          name="title"
+          placeholder="Title"
+          required
+          />
+        <label for="notice">Notice:</label>
+        <input
+          type="text"
+          id="notice"
+          name="content"
+          placeholder="Notice"
+          required
+        />
+        <label for="notice-date">Date:</label>
+        <input
+          type="date"
+          id="notice-date"
+          name="notice_date"
+          required
+          />
+        <button type="submit">Submit</button>
     </section>
 
     <section>
