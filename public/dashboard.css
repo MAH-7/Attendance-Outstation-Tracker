@@ -30,13 +30,30 @@ section {
   justify-content: space-between;
 }
 
+/* Desktop Layout */
+.left-column {
+  width: 35%;
+  box-sizing: border-box;
+  padding: 0 10px;
+}
+
+.widgets-container {
+  margin-top: 20px;
+}
+
+/* Hide mobile widgets on desktop */
+.mobile-widgets-container {
+  display: none;
+}
+
+
 .table-container {
   box-sizing: border-box;
   padding: 0 10px;
 }
 
 .table-container.office {
-  width: 35%; /* Smaller table for Employees In Office */
+  width: 100%; /* Full width to match widgets in left column */
   margin-bottom: 20px;
 }
 
@@ -52,17 +69,36 @@ section {
     gap: 20px;
   }
   
+  .left-column {
+    width: 100%;
+    padding: 0 5px;
+    order: 1;
+  }
+  
   .table-container {
     width: 100% !important;
     padding: 0 5px;
   }
   
   .table-container.office {
-    order: 1;
+    margin-bottom: 0;
   }
   
   .table-container.outstation {
     order: 2;
+  }
+  
+  /* Mobile: Hide desktop widgets, show mobile widgets */
+  .left-column .widgets-container {
+    display: none;
+  }
+  
+  .mobile-widgets-container {
+    display: block;
+    order: 3;
+    width: 100%;
+    padding: 0 5px;
+    margin-top: 20px;
   }
   
   /* Make tables horizontally scrollable on mobile */

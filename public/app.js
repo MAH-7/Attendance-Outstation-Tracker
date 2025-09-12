@@ -216,8 +216,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     
     const hijriElement = document.getElementById('hijri-date');
+    const hijriMobileElement = document.getElementById('hijri-date-mobile');
+    const errorText = 'Prayer times service temporarily unavailable';
+    
     if (hijriElement) {
-      hijriElement.textContent = 'Prayer times service temporarily unavailable';
+      hijriElement.textContent = errorText;
+    }
+    if (hijriMobileElement) {
+      hijriMobileElement.textContent = errorText;
     }
     
     // Show approximate times for Kuala Terengganu in 12-hour format
@@ -231,10 +237,15 @@ document.addEventListener("DOMContentLoaded", function () {
       'isha-time': '8:25 PM'
     };
     
+    // Update both desktop and mobile elements
     Object.keys(staticTimes).forEach(id => {
       const element = document.getElementById(id);
+      const mobileElement = document.getElementById(id + '-mobile');
       if (element) {
         element.textContent = staticTimes[id];
+      }
+      if (mobileElement) {
+        mobileElement.textContent = staticTimes[id];
       }
     });
   }
@@ -323,25 +334,36 @@ document.addEventListener("DOMContentLoaded", function () {
         'isha-time': convertTo12Hour(timings.Isha) || '--:--'
       };
       
+      // Update both desktop and mobile elements
       Object.keys(elements).forEach(id => {
         const element = document.getElementById(id);
+        const mobileElement = document.getElementById(id + '-mobile');
         if (element) {
           element.textContent = elements[id];
         }
+        if (mobileElement) {
+          mobileElement.textContent = elements[id];
+        }
       });
       
+      // Update Hijri date for both desktop and mobile
       const hijriElement = document.getElementById('hijri-date');
+      const hijriMobileElement = document.getElementById('hijri-date-mobile');
+      const today = new Date();
+      const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      };
+      const hijriDate = data.date?.hijri ? `${data.date.hijri.day} ${data.date.hijri.month.en} ${data.date.hijri.year}` : '';
+      const dateText = `${today.toLocaleDateString('en-MY', options)} | ${hijriDate} | Kuala Terengganu`;
+      
       if (hijriElement) {
-        const today = new Date();
-        const options = { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        };
-        const hijriDate = data.date?.hijri ? `${data.date.hijri.day} ${data.date.hijri.month.en} ${data.date.hijri.year}` : '';
-        hijriElement.textContent = 
-          `${today.toLocaleDateString('en-MY', options)} | ${hijriDate} | Kuala Terengganu`;
+        hijriElement.textContent = dateText;
+      }
+      if (hijriMobileElement) {
+        hijriMobileElement.textContent = dateText;
       }
     }
   }
@@ -397,9 +419,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function updatePublicHolidays(holidays) {
     const holidaysList = document.getElementById('holidays-list');
-    if (!holidaysList) return;
+    const holidaysListMobile = document.getElementById('holidays-list-mobile');
+    if (!holidaysList && !holidaysListMobile) return;
     
-    holidaysList.innerHTML = '';
+    // Clear both desktop and mobile containers
+    if (holidaysList) holidaysList.innerHTML = '';
+    if (holidaysListMobile) holidaysListMobile.innerHTML = '';
     
     // Get today's date for comparison
     const today = new Date();
@@ -417,7 +442,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }).slice(0, 8);
     
     if (upcomingHolidays.length === 0) {
-      holidaysList.innerHTML = `<div style="text-align: center; color: #7f8c8d; padding: 20px;">All ${currentYear} holidays have passed.<br>Will show ${currentYear + 1} holidays when available.</div>`;
+      const noHolidaysHTML = `<div style="text-align: center; color: #7f8c8d; padding: 20px;">All ${currentYear} holidays have passed.<br>Will show ${currentYear + 1} holidays when available.</div>`;
+      if (holidaysList) holidaysList.innerHTML = noHolidaysHTML;
+      if (holidaysListMobile) holidaysListMobile.innerHTML = noHolidaysHTML;
       return;
     }
     
@@ -450,18 +477,25 @@ document.addEventListener("DOMContentLoaded", function () {
         <span class="holiday-date">${dateDisplay}</span>
       `;
       
-      holidaysList.appendChild(holidayItem);
+      // Append to both desktop and mobile containers
+      if (holidaysList) {
+        holidaysList.appendChild(holidayItem.cloneNode(true));
+      }
+      if (holidaysListMobile) {
+        holidaysListMobile.appendChild(holidayItem);
+      }
     });
   }
 
   function displayFallbackHolidays() {
     // Check if we're on the dashboard page
-    if (!document.getElementById('public-holidays-container')) {
+    if (!document.getElementById('public-holidays-container') && !document.getElementById('public-holidays-container-mobile')) {
       return; // Exit if not on dashboard page
     }
     
     const holidaysList = document.getElementById('holidays-list');
-    if (!holidaysList) return;
+    const holidaysListMobile = document.getElementById('holidays-list-mobile');
+    if (!holidaysList && !holidaysListMobile) return;
     const currentYear = new Date().getFullYear();
     
     // Basic list of major Malaysian holidays
@@ -476,7 +510,9 @@ document.addEventListener("DOMContentLoaded", function () {
       { name: 'Christmas Day', date: `${currentYear}-12-25` }
     ];
     
-    holidaysList.innerHTML = '';
+    // Clear both containers
+    if (holidaysList) holidaysList.innerHTML = '';
+    if (holidaysListMobile) holidaysListMobile.innerHTML = '';
     
     const today = new Date();
     const upcomingHolidays = majorHolidays.filter(holiday => {
@@ -485,7 +521,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     
     if (upcomingHolidays.length === 0) {
-      holidaysList.innerHTML = '<div style="text-align: center; color: #7f8c8d;">Major holidays for this year</div>';
+      const fallbackHTML = '<div style="text-align: center; color: #7f8c8d;">Major holidays for this year</div>';
+      if (holidaysList) holidaysList.innerHTML = fallbackHTML;
+      if (holidaysListMobile) holidaysListMobile.innerHTML = fallbackHTML;
       upcomingHolidays.push(...majorHolidays.slice(0, 5));
     }
     
@@ -504,7 +542,13 @@ document.addEventListener("DOMContentLoaded", function () {
         })}</span>
       `;
       
-      holidaysList.appendChild(holidayItem);
+      // Append to both desktop and mobile containers
+      if (holidaysList) {
+        holidaysList.appendChild(holidayItem.cloneNode(true));
+      }
+      if (holidaysListMobile) {
+        holidaysListMobile.appendChild(holidayItem);
+      }
     });
   }
 });
