@@ -33,27 +33,27 @@
           .getElementById("status")
           .addEventListener("change", toggleFields);
         toggleFields(); // On page load, call it to set initial state
-        
+
         // Download reports functionality
         document.getElementById('download-btn').addEventListener('click', openDownloadModal);
       });
 
       function openDownloadModal() {
         document.getElementById('download-modal').style.display = 'block';
-        
+
         // Populate month selector with current and previous months
         const monthSelect = document.getElementById('month-select');
         const currentDate = new Date();
-        
+
         // Clear existing options
         monthSelect.innerHTML = '';
-        
+
         // Add last 12 months
         for (let i = 0; i < 12; i++) {
           const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
           const monthValue = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
           const monthText = date.toLocaleDateString('en-MY', { year: 'numeric', month: 'long' });
-          
+
           const option = document.createElement('option');
           option.value = monthValue;
           option.textContent = monthText;
@@ -68,7 +68,7 @@
       async function downloadReport() {
         const month = document.getElementById('month-select').value;
         const format = document.querySelector('input[name="format"]:checked').value;
-        
+
         if (!month || !format) {
           alert('Please select both month and format');
           return;
@@ -76,7 +76,7 @@
 
         try {
           const response = await fetch(`/api/download-report?month=${month}&format=${format}`);
-          
+
           if (!response.ok) {
             throw new Error('Failed to generate report');
           }
@@ -90,7 +90,7 @@
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
-          
+
           closeDownloadModal();
           alert('Report downloaded successfully!');
         } catch (error) {
@@ -212,7 +212,7 @@
       </table>
     </section>
 
-    <!-- Download Report Modal -->
+    <!-- Download Reports Modal - Moved outside form scope -->
     <div id="download-modal" class="modal" style="display: none;">
       <div class="modal-content">
         <div class="modal-header">
@@ -222,11 +222,11 @@
         <div class="modal-body">
           <div class="form-group">
             <label for="month-select">Select Month:</label>
-            <select id="month-select" required>
+            <select id="month-select">
               <!-- Options will be populated dynamically -->
             </select>
           </div>
-          
+
           <div class="form-group">
             <label>Select Format:</label>
             <div class="radio-group">
@@ -240,7 +240,7 @@
               </label>
             </div>
           </div>
-          
+
           <div class="form-group">
             <button onclick="downloadReport()" class="download-button">Generate & Download</button>
             <button onclick="closeDownloadModal()" class="cancel-button">Cancel</button>
