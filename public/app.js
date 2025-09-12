@@ -3,6 +3,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Initial data fetch
   fetchData();
+  
+  // Fetch additional dashboard data (only on dashboard page)
+  if (document.getElementById('prayer-times-container')) {
+    fetchPrayerTimes();
+  }
+  if (document.getElementById('public-holidays-container')) {
+    fetchPublicHolidays();
+  }
 
   // Listen for new attendance data
   socket.on("newAttendance", () => {
@@ -175,6 +183,328 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         alert("Failed to delete notice: " + response.statusText);
       }
+    });
+  }
+
+  // Fetch Prayer Times for Kuala Terengganu (TRG01)
+  async function fetchPrayerTimes() {
+    try {
+      // Try working API with proper CORS handling
+      const response = await fetch('https://api.aladhan.com/v1/timingsByCity?city=Kuala%20Terengganu&country=Malaysia&method=3');
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.data && data.data.timings) {
+          updatePrayerTimesAladhan(data.data);
+          return;
+        }
+      }
+      
+      // Fallback to static times if API fails
+      displayStaticPrayerTimes();
+      
+    } catch (error) {
+      console.warn('Prayer API unavailable, showing static times');
+      displayStaticPrayerTimes();
+    }
+  }
+
+  function displayStaticPrayerTimes() {
+    // Check if we're on the dashboard page
+    if (!document.getElementById('prayer-times-container')) {
+      return; // Exit if not on dashboard page
+    }
+    
+    const hijriElement = document.getElementById('hijri-date');
+    if (hijriElement) {
+      hijriElement.textContent = 'Prayer times service temporarily unavailable';
+    }
+    
+    // Show approximate times for Kuala Terengganu in 12-hour format
+    const staticTimes = {
+      'imsak-time': '5:40 AM',
+      'fajr-time': '5:50 AM',
+      'sunrise-time': '7:00 AM',
+      'dhuhr-time': '1:10 PM',
+      'asr-time': '4:20 PM',
+      'maghrib-time': '7:15 PM',
+      'isha-time': '8:25 PM'
+    };
+    
+    Object.keys(staticTimes).forEach(id => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = staticTimes[id];
+      }
+    });
+  }
+
+  function convertTo12Hour(time24) {
+    if (!time24 || time24 === '--:--') return '--:--';
+    const [hours, minutes] = time24.split(':');
+    const hour12 = hours % 12 || 12;
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    return `${hour12}:${minutes} ${ampm}`;
+  }
+
+  function updatePrayerTimes(data) {
+    const times = data.times;
+    const elements = {
+      'imsak-time': convertTo12Hour(times.imsak) || '--:--',
+      'fajr-time': convertTo12Hour(times.fajr) || '--:--',
+      'sunrise-time': convertTo12Hour(times.sunrise) || '--:--',
+      'dhuhr-time': convertTo12Hour(times.dhuhr) || '--:--',
+      'asr-time': convertTo12Hour(times.asr) || '--:--',
+      'maghrib-time': convertTo12Hour(times.maghrib) || '--:--',
+      'isha-time': convertTo12Hour(times.isha) || '--:--'
+    };
+    
+    Object.keys(elements).forEach(id => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = elements[id];
+      }
+    });
+    
+    // Update date
+    const hijriElement = document.getElementById('hijri-date');
+    if (hijriElement) {
+      const today = new Date();
+      const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      };
+      hijriElement.textContent = 
+        `${today.toLocaleDateString('en-MY', options)} | ${data.location || 'Kuala Terengganu'}`;
+    }
+  }
+
+  function updatePrayerTimesAzanPro(data) {
+    if (data && data.times) {
+      const times = data.times;
+      const elements = {
+        'imsak-time': convertTo12Hour(times.imsak) || '--:--',
+        'fajr-time': convertTo12Hour(times.fajr) || '--:--',
+        'sunrise-time': convertTo12Hour(times.sunrise) || '--:--',
+        'dhuhr-time': convertTo12Hour(times.dhuhr) || '--:--',
+        'asr-time': convertTo12Hour(times.asr) || '--:--',
+        'maghrib-time': convertTo12Hour(times.maghrib) || '--:--',
+        'isha-time': convertTo12Hour(times.isha) || '--:--'
+      };
+      
+      Object.keys(elements).forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.textContent = elements[id];
+        }
+      });
+      
+      const hijriElement = document.getElementById('hijri-date');
+      if (hijriElement) {
+        const today = new Date();
+        hijriElement.textContent = 
+          `${today.toLocaleDateString('en-MY')} | Kuala Terengganu`;
+      }
+    }
+  }
+
+  function updatePrayerTimesAladhan(data) {
+    if (data && data.timings) {
+      const timings = data.timings;
+      const elements = {
+        'imsak-time': convertTo12Hour(timings.Imsak) || '--:--',
+        'fajr-time': convertTo12Hour(timings.Fajr) || '--:--',
+        'sunrise-time': convertTo12Hour(timings.Sunrise) || '--:--',
+        'dhuhr-time': convertTo12Hour(timings.Dhuhr) || '--:--',
+        'asr-time': convertTo12Hour(timings.Asr) || '--:--',
+        'maghrib-time': convertTo12Hour(timings.Maghrib) || '--:--',
+        'isha-time': convertTo12Hour(timings.Isha) || '--:--'
+      };
+      
+      Object.keys(elements).forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.textContent = elements[id];
+        }
+      });
+      
+      const hijriElement = document.getElementById('hijri-date');
+      if (hijriElement) {
+        const today = new Date();
+        const options = { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        };
+        const hijriDate = data.date?.hijri ? `${data.date.hijri.day} ${data.date.hijri.month.en} ${data.date.hijri.year}` : '';
+        hijriElement.textContent = 
+          `${today.toLocaleDateString('en-MY', options)} | ${hijriDate} | Kuala Terengganu`;
+      }
+    }
+  }
+
+  function updatePrayerTimesGovMY(prayerData) {
+    if (prayerData) {
+      const elements = {
+        'imsak-time': convertTo12Hour(prayerData.imsak) || '--:--',
+        'fajr-time': convertTo12Hour(prayerData.fajr) || '--:--',
+        'sunrise-time': convertTo12Hour(prayerData.syuruk) || '--:--',
+        'dhuhr-time': convertTo12Hour(prayerData.dhuhr) || '--:--',
+        'asr-time': convertTo12Hour(prayerData.asr) || '--:--',
+        'maghrib-time': convertTo12Hour(prayerData.maghrib) || '--:--',
+        'isha-time': convertTo12Hour(prayerData.isha) || '--:--'
+      };
+      
+      Object.keys(elements).forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.textContent = elements[id];
+        }
+      });
+      
+      const hijriElement = document.getElementById('hijri-date');
+      if (hijriElement) {
+        hijriElement.textContent = 
+          `${prayerData.date} | ${prayerData.hijri || ''} | Kuala Terengganu`;
+      }
+    }
+  }
+
+  // Fetch Malaysia Public Holidays
+  async function fetchPublicHolidays() {
+    try {
+      // Using free Nager.Date API (no API key required)
+      const currentYear = new Date().getFullYear();
+      const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${currentYear}/MY`);
+      
+      if (response.ok && response.headers.get('content-type')?.includes('application/json')) {
+        const holidays = await response.json();
+        updatePublicHolidays(holidays);
+        return;
+      }
+      
+      // Fallback to static holidays
+      displayFallbackHolidays();
+      
+    } catch (error) {
+      console.error('Error fetching public holidays:', error);
+      displayFallbackHolidays();
+    }
+  }
+
+  function updatePublicHolidays(holidays) {
+    const holidaysList = document.getElementById('holidays-list');
+    if (!holidaysList) return;
+    
+    holidaysList.innerHTML = '';
+    
+    // Get today's date for comparison
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    
+    // Sort holidays by date
+    holidays.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    // Show only upcoming holidays (next 8 for better display)
+    const upcomingHolidays = holidays.filter(holiday => {
+      const holidayDate = new Date(holiday.date);
+      // Include today's date if it's a holiday
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      return holidayDate >= todayStart;
+    }).slice(0, 8);
+    
+    if (upcomingHolidays.length === 0) {
+      holidaysList.innerHTML = `<div style="text-align: center; color: #7f8c8d; padding: 20px;">All ${currentYear} holidays have passed.<br>Will show ${currentYear + 1} holidays when available.</div>`;
+      return;
+    }
+    
+    upcomingHolidays.forEach(holiday => {
+      const holidayDate = new Date(holiday.date);
+      const isToday = holidayDate.toDateString() === today.toDateString();
+      
+      const holidayItem = document.createElement('div');
+      holidayItem.className = `holiday-item ${isToday ? 'today' : ''}`;
+      
+      // Calculate days until holiday
+      const timeDiff = holidayDate - today;
+      const daysUntil = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+      
+      let dateDisplay = holidayDate.toLocaleDateString('en-MY', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+      
+      if (isToday) {
+        dateDisplay += ' (Today!)';
+      } else if (daysUntil === 1) {
+        dateDisplay += ' (Tomorrow)';
+      } else if (daysUntil <= 7) {
+        dateDisplay += ` (${daysUntil} days)`;
+      }
+      
+      holidayItem.innerHTML = `
+        <span class="holiday-name">${holiday.name}</span>
+        <span class="holiday-date">${dateDisplay}</span>
+      `;
+      
+      holidaysList.appendChild(holidayItem);
+    });
+  }
+
+  function displayFallbackHolidays() {
+    // Check if we're on the dashboard page
+    if (!document.getElementById('public-holidays-container')) {
+      return; // Exit if not on dashboard page
+    }
+    
+    const holidaysList = document.getElementById('holidays-list');
+    if (!holidaysList) return;
+    const currentYear = new Date().getFullYear();
+    
+    // Basic list of major Malaysian holidays
+    const majorHolidays = [
+      { name: 'New Year\'s Day', date: `${currentYear}-01-01` },
+      { name: 'Chinese New Year', date: `${currentYear}-01-29` },
+      { name: 'Labour Day', date: `${currentYear}-05-01` },
+      { name: 'Wesak Day', date: `${currentYear}-05-12` },
+      { name: 'Hari Raya Aidilfitri', date: `${currentYear}-06-25` },
+      { name: 'Malaysia Day', date: `${currentYear}-09-16` },
+      { name: 'Deepavali', date: `${currentYear}-10-21` },
+      { name: 'Christmas Day', date: `${currentYear}-12-25` }
+    ];
+    
+    holidaysList.innerHTML = '';
+    
+    const today = new Date();
+    const upcomingHolidays = majorHolidays.filter(holiday => {
+      const holidayDate = new Date(holiday.date);
+      return holidayDate >= today;
+    });
+    
+    if (upcomingHolidays.length === 0) {
+      holidaysList.innerHTML = '<div style="text-align: center; color: #7f8c8d;">Major holidays for this year</div>';
+      upcomingHolidays.push(...majorHolidays.slice(0, 5));
+    }
+    
+    upcomingHolidays.forEach(holiday => {
+      const holidayDate = new Date(holiday.date);
+      const isToday = holidayDate.toDateString() === today.toDateString();
+      
+      const holidayItem = document.createElement('div');
+      holidayItem.className = `holiday-item ${isToday ? 'today' : ''}`;
+      
+      holidayItem.innerHTML = `
+        <span class="holiday-name">${holiday.name}</span>
+        <span class="holiday-date">${holidayDate.toLocaleDateString('en-MY', { 
+          month: 'short', 
+          day: 'numeric' 
+        })}</span>
+      `;
+      
+      holidaysList.appendChild(holidayItem);
     });
   }
 });

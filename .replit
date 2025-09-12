@@ -1,4 +1,4 @@
-modules = ["nodejs-14", "web", "bash"]
+modules = ["nodejs-18", "web", "bash"]
 [agent]
 expertMode = true
 integrations = ["javascript_supabase:1.0.0"]
@@ -33,6 +33,14 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 41949
+externalPort = 3001
+
+[[ports]]
+localPort = 42089
+externalPort = 3000
 
 [deployment]
 deploymentTarget = "vm"

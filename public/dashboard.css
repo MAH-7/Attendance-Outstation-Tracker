@@ -384,3 +384,170 @@ td {
   font-style: sans-serif;
   margin: 0;
 }
+
+/* Info Widgets Styling */
+.info-widget {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 20px 0;
+  padding: 20px;
+  border-left: 4px solid #3498db;
+}
+
+.info-widget h3 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+  font-size: 1.2em;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Prayer Times Styling */
+.prayer-times-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.prayer-time {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #3498db;
+}
+
+.prayer-name {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9em;
+}
+
+.prayer-time-value {
+  font-weight: 700;
+  color: #3498db;
+  font-size: 1em;
+}
+
+.prayer-date {
+  text-align: center;
+  color: #7f8c8d;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 10px;
+}
+
+/* Emergency Contacts Styling */
+.emergency-contacts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+.contact-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #3498db;
+}
+
+.contact-label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9em;
+}
+
+.contact-number {
+  font-weight: 700;
+  color: #3498db;
+  font-size: 1em;
+  font-family: 'Courier New', monospace;
+}
+
+/* Public Holidays Styling */
+.holidays-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.holiday-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  margin-bottom: 8px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #3498db;
+  transition: background-color 0.2s;
+}
+
+.holiday-item:hover {
+  background-color: #e9ecef;
+}
+
+.holiday-item.today {
+  background-color: #fff3cd;
+  border-left-color: #ffc107;
+  font-weight: bold;
+}
+
+.holiday-name {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9em;
+  flex: 1;
+}
+
+.holiday-date {
+  font-weight: 500;
+  color: #3498db;
+  font-size: 0.85em;
+  text-align: right;
+  margin-left: 10px;
+}
+
+.holiday-item.today .holiday-date {
+  color: #856404;
+}
+
+.holiday-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  margin-bottom: 8px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #3498db;
+}
+
+.holiday-name {
+  font-weight: 600;
+  color: #2c3e50;
+  flex: 1;
+}
+
+.holiday-date {
+  font-weight: 700;
+  color: #3498db;
+  font-size: 0.9em;
+  min-width: 80px;
+  text-align: right;
+}
+
+.holiday-item.today {
+  background-color: #fff3cd;
+  border-left-color: #ffc107;
+}
+
+.holiday-item.today .holiday-date {
+  color: #856404;
+}

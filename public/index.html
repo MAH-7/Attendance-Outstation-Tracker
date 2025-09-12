@@ -33,11 +33,75 @@
           .getElementById("status")
           .addEventListener("change", toggleFields);
         toggleFields(); // On page load, call it to set initial state
+        
+        // Download reports functionality
+        document.getElementById('download-btn').addEventListener('click', openDownloadModal);
       });
+
+      function openDownloadModal() {
+        document.getElementById('download-modal').style.display = 'block';
+        
+        // Populate month selector with current and previous months
+        const monthSelect = document.getElementById('month-select');
+        const currentDate = new Date();
+        
+        // Clear existing options
+        monthSelect.innerHTML = '';
+        
+        // Add last 12 months
+        for (let i = 0; i < 12; i++) {
+          const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+          const monthValue = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+          const monthText = date.toLocaleDateString('en-MY', { year: 'numeric', month: 'long' });
+          
+          const option = document.createElement('option');
+          option.value = monthValue;
+          option.textContent = monthText;
+          monthSelect.appendChild(option);
+        }
+      }
+
+      function closeDownloadModal() {
+        document.getElementById('download-modal').style.display = 'none';
+      }
+
+      async function downloadReport() {
+        const month = document.getElementById('month-select').value;
+        const format = document.querySelector('input[name="format"]:checked').value;
+        
+        if (!month || !format) {
+          alert('Please select both month and format');
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/download-report?month=${month}&format=${format}`);
+          
+          if (!response.ok) {
+            throw new Error('Failed to generate report');
+          }
+
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = `attendance-report-${month}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          
+          closeDownloadModal();
+          alert('Report downloaded successfully!');
+        } catch (error) {
+          alert('Error downloading report: ' + error.message);
+        }
+      }
     </script>
   </head>
   <body>
     <a href="./dashboard.html" class="link">Dashboard</a>
+    <button id="download-btn" class="link">Download Reports</button>
     <h1>JPKTimur Attendance & Outstation Tracker</h1>
     <section>
       <h2>Submit Attendance or Outstation</h2>
@@ -147,6 +211,43 @@
         <tbody id="outstation-employees"></tbody>
       </table>
     </section>
+
+    <!-- Download Report Modal -->
+    <div id="download-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Download Attendance Report</h3>
+          <span class="close" onclick="closeDownloadModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="month-select">Select Month:</label>
+            <select id="month-select" required>
+              <!-- Options will be populated dynamically -->
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Select Format:</label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="format" value="excel" checked>
+                Excel (.xlsx)
+              </label>
+              <label>
+                <input type="radio" name="format" value="pdf">
+                PDF (.pdf)
+              </label>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <button onclick="downloadReport()" class="download-button">Generate & Download</button>
+            <button onclick="closeDownloadModal()" class="cancel-button">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script src="app.js"></script>
   </body>

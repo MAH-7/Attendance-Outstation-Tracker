@@ -1,11 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard</title>
     <link rel="stylesheet" href="dashboard.css" />
-    
 
     <script src="/socket.io/socket.io.js"></script>
   </head>
@@ -23,8 +22,85 @@
           </thead>
           <tbody id="present-employees"></tbody>
         </table>
-        
-        
+
+        <!-- Prayer Times Widget for Kuala Terengganu -->
+        <div class="info-widget">
+          <h3>Waktu Solat - Kuala Terengganu</h3>
+          <div id="prayer-times-container">
+            <div class="prayer-times-grid">
+              <div class="prayer-time">
+                <span class="prayer-name">Imsak</span>
+                <span class="prayer-time-value" id="imsak-time">--:--</span>
+              </div>
+              <div class="prayer-time">
+                <span class="prayer-name">Subuh</span>
+                <span class="prayer-time-value" id="fajr-time">--:--</span>
+              </div>
+              <div class="prayer-time">
+                <span class="prayer-name">Syuruk</span>
+                <span class="prayer-time-value" id="sunrise-time">--:--</span>
+              </div>
+              <div class="prayer-time">
+                <span class="prayer-name">Zohor</span>
+                <span class="prayer-time-value" id="dhuhr-time">--:--</span>
+              </div>
+              <div class="prayer-time">
+                <span class="prayer-name">Asar</span>
+                <span class="prayer-time-value" id="asr-time">--:--</span>
+              </div>
+              <div class="prayer-time">
+                <span class="prayer-name">Maghrib</span>
+                <span class="prayer-time-value" id="maghrib-time">--:--</span>
+              </div>
+              <div class="prayer-time">
+                <span class="prayer-name">Isyak</span>
+                <span class="prayer-time-value" id="isha-time">--:--</span>
+              </div>
+            </div>
+            <div class="prayer-date" id="hijri-date">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Emergency Contacts -->
+        <div class="info-widget">
+          <h3>Emergency Contacts</h3>
+          <div class="emergency-contacts">
+            <div class="contact-item">
+              <span class="contact-label">Police (Emergency)</span>
+              <span class="contact-number">999</span>
+            </div>
+            <div class="contact-item">
+              <span class="contact-label">Fire & Rescue</span>
+              <span class="contact-number">994</span>
+            </div>
+            <div class="contact-item">
+              <span class="contact-label">Ambulance</span>
+              <span class="contact-number">999</span>
+            </div>
+            <div class="contact-item">
+              <span class="contact-label">Office Security</span>
+              <span class="contact-number">XXX-XXX-XXX</span>
+            </div>
+            <div class="contact-item">
+              <span class="contact-label">Building Management</span>
+              <span class="contact-number">XXX-XXX-XXX</span>
+            </div>
+            <!-- <div class="contact-item">
+              <span class="contact-label">IT Support</span>
+              <span class="contact-number">03-XXXX-XXXX</span>
+            </div> -->
+          </div>
+        </div>
+
+        <!-- Malaysia Public Holidays -->
+        <div class="info-widget">
+          <h3>Malaysia Public Holidays</h3>
+          <div id="public-holidays-container">
+            <div class="holidays-list" id="holidays-list">
+              Loading holidays...
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="table-container outstation">
@@ -47,10 +123,6 @@
         <div id="notice-board-container"></div>
       </div>
     </section>
-
-    
-
-    
 
     <script src="./utils.js"></script>
     <script src="app.js"></script>
