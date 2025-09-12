@@ -13,8 +13,9 @@ const io = socketIo(server);
 
 // PostgreSQL connection pool - using Supabase
 const pool = new Pool({
-  connectionString: process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  connectionString:
+    process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
 });
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -31,7 +32,7 @@ async function initializeDatabase() {
       destination TEXT,
       start_date DATE,
       end_date DATE,
-      check_in_time TIME,
+      check_in_time TEXT,
       back_time TEXT,
       pin TEXT
     )`);
@@ -52,9 +53,9 @@ async function initializeDatabase() {
       notice_date TEXT
     )`);
 
-    console.log('Database tables initialized successfully');
+    console.log("Database tables initialized successfully");
   } catch (err) {
-    console.error('Error initializing database:', err);
+    console.error("Error initializing database:", err);
   }
 }
 
@@ -68,9 +69,24 @@ function formatTo12Hour(time) {
 
 // Submit attendance
 app.post("/submit-attendance", async (req, res) => {
-  const { employee, status, destination, start_date, end_date, check_in_time, pin } = req.body;
+  const {
+    employee,
+    status,
+    destination,
+    start_date,
+    end_date,
+    check_in_time,
+    pin,
+  } = req.body;
 
-  console.log("Received Data:", { employee, status, destination, start_date, end_date, check_in_time });
+  console.log("Received Data:", {
+    employee,
+    status,
+    destination,
+    start_date,
+    end_date,
+    check_in_time,
+  });
 
   try {
     let result;
@@ -78,10 +94,22 @@ app.post("/submit-attendance", async (req, res) => {
     if (status === "Present") {
       const today = moment().tz("Asia/Kuala_Lumpur").format("YYYY-MM-DD");
       let back_time = null;
+      let formatted_check_in_time = check_in_time;
 
       if (check_in_time) {
-        const checkInDate = moment.tz(check_in_time, "HH:mm", "Asia/Kuala_Lumpur");
-        const officeStartTime = moment.tz("07:30", "HH:mm", "Asia/Kuala_Lumpur");
+        const checkInDate = moment.tz(
+          check_in_time,
+          "HH:mm",
+          "Asia/Kuala_Lumpur"
+        );
+        const officeStartTime = moment.tz(
+          "07:30",
+          "HH:mm",
+          "Asia/Kuala_Lumpur"
+        );
+
+        // Format check-in time to 12-hour format with AM/PM
+        formatted_check_in_time = checkInDate.format("h:mm A");
 
         if (checkInDate.isBefore(officeStartTime)) {
           checkInDate.set({ hour: 7, minute: 30 });
@@ -100,11 +128,17 @@ app.post("/submit-attendance", async (req, res) => {
       result = await pool.query(
         `INSERT INTO attendance (employee, status, check_in_time, back_time, start_date) 
          VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-        [employee, status, check_in_time, back_time, today]
+        [employee, status, formatted_check_in_time, back_time, today]
       );
 
-      io.emit("newAttendance", { employee, status, check_in_time, back_time, start_date: today, id: result.rows[0].id });
-
+      io.emit("newAttendance", {
+        employee,
+        status,
+        check_in_time: formatted_check_in_time,
+        back_time,
+        start_date: today,
+        id: result.rows[0].id,
+      });
     } else if (status === "Outstation") {
       result = await pool.query(
         `INSERT INTO outstation (employee, destination, start_date, end_date, pin) 
@@ -112,12 +146,18 @@ app.post("/submit-attendance", async (req, res) => {
         [employee, destination, start_date, end_date, pin]
       );
 
-      io.emit("newOutstation", { employee, destination, start_date, end_date, id: result.rows[0].id });
+      io.emit("newOutstation", {
+        employee,
+        destination,
+        start_date,
+        end_date,
+        id: result.rows[0].id,
+      });
     }
 
     res.redirect("/");
   } catch (err) {
-    console.error('Database error:', err.message);
+    console.error("Database error:", err.message);
     return res.status(500).send("Database error");
   }
 });
@@ -136,11 +176,16 @@ app.post("/submit-notice", async (req, res) => {
       [title, content, notice_date]
     );
 
-    io.emit("newNotice", { title, content, notice_date, id: result.rows[0].id });
+    io.emit("newNotice", {
+      title,
+      content,
+      notice_date,
+      id: result.rows[0].id,
+    });
 
     res.redirect("/");
   } catch (err) {
-    console.error('Database error:', err.message);
+    console.error("Database error:", err.message);
     return res.status(500).send("Database error");
   }
 });
@@ -155,19 +200,21 @@ app.get("/present", async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error('Database error:', err.message);
-    res.status(500).json({ error: 'Database error' });
+    console.error("Database error:", err.message);
+    res.status(500).json({ error: "Database error" });
   }
 });
 
 // Get outstation employees
 app.get("/outstation", async (req, res) => {
   try {
-    const result = await pool.query(`SELECT * FROM outstation ORDER BY id DESC`);
+    const result = await pool.query(
+      `SELECT * FROM outstation ORDER BY id DESC`
+    );
     res.json(result.rows);
   } catch (err) {
-    console.error('Database error:', err.message);
-    res.status(500).json({ error: 'Database error' });
+    console.error("Database error:", err.message);
+    res.status(500).json({ error: "Database error" });
   }
 });
 
@@ -177,8 +224,8 @@ app.get("/notice", async (req, res) => {
     const result = await pool.query(`SELECT * FROM notice`);
     res.json(result.rows);
   } catch (err) {
-    console.error('Database error:', err.message);
-    res.status(500).json({ error: 'Database error' });
+    console.error("Database error:", err.message);
+    res.status(500).json({ error: "Database error" });
   }
 });
 
@@ -188,19 +235,24 @@ app.delete("/outstation/:id", async (req, res) => {
   const { pin } = req.body;
 
   try {
-    const result = await pool.query(`SELECT pin FROM outstation WHERE id = $1`, [id]);
+    const result = await pool.query(
+      `SELECT pin FROM outstation WHERE id = $1`,
+      [id]
+    );
 
-    if (!result.rows.length) return res.status(500).send("Error fetching outstation record");
+    if (!result.rows.length)
+      return res.status(500).send("Error fetching outstation record");
 
     const row = result.rows[0];
-    if (row.pin !== pin && pin !== "9999") return res.status(403).send("Invalid PIN");
+    if (row.pin !== pin && pin !== "9999")
+      return res.status(403).send("Invalid PIN");
 
     await pool.query(`DELETE FROM outstation WHERE id = $1`, [id]);
 
     io.emit("deleteOutstation", { id });
     return res.status(200).send("Outstation record deleted successfully");
   } catch (err) {
-    console.error('Database error:', err.message);
+    console.error("Database error:", err.message);
     return res.status(500).send("Error deleting outstation record");
   }
 });
@@ -213,14 +265,18 @@ app.delete("/notice/:id", async (req, res) => {
     io.emit("deleteNotice", { id });
     return res.status(200).send("Notice deleted successfully");
   } catch (err) {
-    console.error('Database error:', err.message);
+    console.error("Database error:", err.message);
     return res.status(500).send("Error deleting notice");
   }
 });
 
 // Serve HTML
-app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public/index.html")));
-app.get("/dashboard", (req, res) => res.sendFile(path.join(__dirname, "public/dashboard.html")));
+app.get("/", (req, res) =>
+  res.sendFile(path.join(__dirname, "public/index.html"))
+);
+app.get("/dashboard", (req, res) =>
+  res.sendFile(path.join(__dirname, "public/dashboard.html"))
+);
 
 // Start server
 const PORT = process.env.PORT || 5000;
@@ -228,11 +284,13 @@ const PORT = process.env.PORT || 5000;
 async function startServer() {
   try {
     await initializeDatabase();
-    console.log('Database initialized successfully');
+    console.log("Database initialized successfully");
 
-    server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+    server.listen(PORT, "0.0.0.0", () =>
+      console.log(`Server running on port ${PORT}`)
+    );
   } catch (err) {
-    console.error('Failed to start server:', err);
+    console.error("Failed to start server:", err);
     process.exit(1);
   }
 }
