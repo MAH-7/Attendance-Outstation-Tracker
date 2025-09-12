@@ -85,31 +85,7 @@ td {
   background-color: #ffffff;
 }
 
-.clock {
-  color: white;
-  background-color: #3498db;
-  font-size: 20px;
-  font-family: sans-serif;
-  letter-spacing: 3px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  position: relative;
-  margin: 20px auto 0;
-  width: max-content;
-  font-weight: bold;
-  border: 1px solid #bdc3c7;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
 
-/* Radio */
-
-.d-flex {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 10px;
-  justify-content: space-between;
-}
 
 .WPLw-elem {
   display: -webkit-box;
@@ -338,29 +314,7 @@ td {
   }
 }
 
-/* Style for weather widget */
-#weatherapi-weather-widget-3 {
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  display: block;
-  width: 100%;
-  /* max-width: px; */
-  font-size: 14px;
-}
 
-/* Adding some margin to the top of the weather widget */
-#weatherapi-weather-widget-3 {
-  margin-top: 10px;
-}
-
-#weatherapi-weather-widget-3 iframe {
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
 
 /* Minimalist Horizontal Card */
 

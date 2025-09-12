@@ -1,5 +1,5 @@
 const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
+const { Pool } = require("pg");
 const bodyParser = require("body-parser");
 const path = require("path");
 const cron = require("node-cron");
@@ -10,269 +10,231 @@ const moment = require("moment-timezone"); // Require moment-timezone
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
-const db = new sqlite3.Database(":memory:");
+
+// PostgreSQL connection pool - using Supabase
+const pool = new Pool({
+  connectionString: process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// Create attendance table
-db.serialize(() => {
-  db.run(`CREATE TABLE attendance (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    employee TEXT,
-    status TEXT,
-    destination TEXT,
-    start_date DATE,
-    end_date DATE,
-    check_in_time TIME,
-    back_time TIME,
-    pin TEXT
-  )`);
-});
+// Initialize database tables
+async function initializeDatabase() {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS attendance (
+      id SERIAL PRIMARY KEY,
+      employee TEXT,
+      status TEXT,
+      destination TEXT,
+      start_date DATE,
+      end_date DATE,
+      check_in_time TIME,
+      back_time TEXT,
+      pin TEXT
+    )`);
 
-// Create notice table
-db.serialize(() => {
-  db.run(`CREATE TABLE notice (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT,
-    content TEXT,
-    notice_date DATE
-  )`);
-});
+    await pool.query(`CREATE TABLE IF NOT EXISTS outstation (
+      id SERIAL PRIMARY KEY,
+      employee VARCHAR(255) NOT NULL,
+      destination VARCHAR(255) NOT NULL,
+      start_date DATE NOT NULL,
+      end_date DATE NOT NULL,
+      pin VARCHAR(10) NOT NULL
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS notice (
+      id SERIAL PRIMARY KEY,
+      title TEXT,
+      content TEXT,
+      notice_date TEXT
+    )`);
+
+    console.log('Database tables initialized successfully');
+  } catch (err) {
+    console.error('Error initializing database:', err);
+  }
+}
 
 // Format time to 12-hour format
 function formatTo12Hour(time) {
   let [hours, minutes] = time.split(":").map(Number);
   const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12; // Convert to 12-hour format
+  hours = hours % 12 || 12;
   return `${hours}:${minutes < 10 ? "0" + minutes : minutes} ${ampm}`;
 }
 
-// Handle form submission
-app.post("/submit-attendance", (req, res) => {
-  const {
-    employee,
-    status,
-    destination,
-    start_date,
-    end_date,
-    check_in_time,
-    pin,
-  } = req.body;
+// Submit attendance
+app.post("/submit-attendance", async (req, res) => {
+  const { employee, status, destination, start_date, end_date, check_in_time, pin } = req.body;
 
-  console.log("Received Data:", {
-    employee,
-    status,
-    destination,
-    start_date,
-    end_date,
-    check_in_time,
-  });
+  console.log("Received Data:", { employee, status, destination, start_date, end_date, check_in_time });
 
-  // Calculate back time based on check-in time
-  let back_time = null;
-  if (status === "Present" && check_in_time) {
-    const checkInDate = moment.tz(check_in_time, "HH:mm", "Asia/Kuala_Lumpur");
+  try {
+    let result;
 
-    // Set office start time at 7:30 AM
-    const officeStartTime = moment.tz("07:30", "HH:mm", "Asia/Kuala_Lumpur");
+    if (status === "Present") {
+      const today = moment().tz("Asia/Kuala_Lumpur").format("YYYY-MM-DD");
+      let back_time = null;
 
-    // If check-in time is earlier than 7:30 AM, adjust to 7:30 AM
-    if (checkInDate.isBefore(officeStartTime)) {
-      checkInDate.set({ hour: 7, minute: 30 });
-    }
+      if (check_in_time) {
+        const checkInDate = moment.tz(check_in_time, "HH:mm", "Asia/Kuala_Lumpur");
+        const officeStartTime = moment.tz("07:30", "HH:mm", "Asia/Kuala_Lumpur");
 
-    const dayOfWeek = checkInDate.day(); // Get the day of the week
+        if (checkInDate.isBefore(officeStartTime)) {
+          checkInDate.set({ hour: 7, minute: 30 });
+        }
 
-    // Calculate back time based on the day of the week
-    if (dayOfWeek >= 0 && dayOfWeek <= 3) {
-      // Sunday to Wednesday
-      checkInDate.add(9, "hours"); // 9 hours for Sun-Wed
-    } else if (dayOfWeek === 4) {
-      // Thursday
-      checkInDate.add(7, "hours").add(30, "minutes"); // 7.5 hours for Thursday
-    }
+        const dayOfWeek = checkInDate.day();
+        if (dayOfWeek >= 0 && dayOfWeek <= 3) {
+          checkInDate.add(9, "hours");
+        } else if (dayOfWeek === 4) {
+          checkInDate.add(7, "hours").add(30, "minutes");
+        }
 
-    // Format the back time correctly in 12-hour format
-    back_time = checkInDate.format("h:mm A");
-  }
-
-  db.run(
-    `INSERT INTO attendance (employee, status, destination, start_date, end_date, check_in_time, back_time, pin) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      employee,
-      status,
-      destination || null,
-      start_date || null,
-      end_date || null,
-      status === "Present" ? check_in_time : null,
-      back_time,
-      status === "Outstation" ? pin : null,
-    ],
-    function (err) {
-      if (err) {
-        console.error(err.message);
-        return res.status(500).send("Database error");
+        back_time = checkInDate.format("h:mm A");
       }
 
-      io.emit("newAttendance", {
-        employee,
-        status,
-        destination,
-        start_date,
-        end_date,
-        check_in_time,
-        back_time,
-        id: this.lastID,
-      });
+      result = await pool.query(
+        `INSERT INTO attendance (employee, status, check_in_time, back_time, start_date) 
+         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [employee, status, check_in_time, back_time, today]
+      );
 
-      res.redirect("/");
+      io.emit("newAttendance", { employee, status, check_in_time, back_time, start_date: today, id: result.rows[0].id });
+
+    } else if (status === "Outstation") {
+      result = await pool.query(
+        `INSERT INTO outstation (employee, destination, start_date, end_date, pin) 
+         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [employee, destination, start_date, end_date, pin]
+      );
+
+      io.emit("newOutstation", { employee, destination, start_date, end_date, id: result.rows[0].id });
     }
-  );
+
+    res.redirect("/");
+  } catch (err) {
+    console.error('Database error:', err.message);
+    return res.status(500).send("Database error");
+  }
 });
 
-// Handle form submission for notice board
-app.post("/submit-notice", (req, res) => {
+// Submit notice
+app.post("/submit-notice", async (req, res) => {
   let { title, content, notice_date } = req.body;
 
-  console.log("Received Data:", {
-    title,
-    content,
-    notice_date,
-  });
+  console.log("Received Data:", { title, content, notice_date });
 
-  // Format the notice_date to only display day and month
   notice_date = moment(notice_date).format("DD MMMM");
 
-  db.run(
-    `INSERT INTO notice (title, content, notice_date) VALUES (?, ?, ?)`,
-    [title, content, notice_date],
-    function (err) {
-      if (err) {
-        console.error(err.message);
-        return res.status(500).send("Database error");
-      }
+  try {
+    const result = await pool.query(
+      `INSERT INTO notice (title, content, notice_date) VALUES ($1, $2, $3) RETURNING id`,
+      [title, content, notice_date]
+    );
 
-      io.emit("newNotice", {
-        title,
-        content,
-        notice_date,
-        id: this.lastID,
-      });
+    io.emit("newNotice", { title, content, notice_date, id: result.rows[0].id });
 
-      res.redirect("/");
-    }
-  );
-});
-
-
-
-
-// Schedule to reset present employees at midnight
-cron.schedule(
-  "11 1 * * *",
-  () => {
-    console.log("Cron job triggered at midnight.");
-    db.run(`DELETE FROM attendance WHERE status = 'Present'`, (err) => {
-      if (err) {
-        console.error("Error resetting present employees:", err.message);
-      } else {
-        console.log("Reset present employees.");
-      }
-    });
-  },
-  {
-    timezone: "Asia/Kuala_Lumpur",
+    res.redirect("/");
+  } catch (err) {
+    console.error('Database error:', err.message);
+    return res.status(500).send("Database error");
   }
-);
-
-// Get employees present in the office
-app.get("/present", (req, res) => {
-  db.all(
-    `SELECT employee, check_in_time, back_time FROM attendance WHERE status = 'Present'`,
-    [],
-    (err, rows) => {
-      if (err) throw err;
-      res.json(rows);
-    }
-  );
 });
 
-// Get employees on outstation
-app.get("/outstation", (req, res) => {
-  db.all(
-    `SELECT * FROM attendance WHERE status = 'Outstation'`,
-    [],
-    (err, rows) => {
-      if (err) throw err;
-      res.json(rows);
-    }
-  );
+// Get employees present today
+app.get("/present", async (req, res) => {
+  try {
+    const today = moment().tz("Asia/Kuala_Lumpur").format("YYYY-MM-DD");
+    const result = await pool.query(
+      `SELECT employee, check_in_time, back_time FROM attendance WHERE status = 'Present' AND start_date = $1`,
+      [today]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Database error:', err.message);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
-// Get notices from the notice board
-app.get("/notice", (req, res) => {
-  db.all(`SELECT * FROM notice`, [], (err, rows) => {
-    if (err) throw err;
-    res.json(rows);
-  });
+// Get outstation employees
+app.get("/outstation", async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT * FROM outstation ORDER BY id DESC`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Database error:', err.message);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
-// Delete outstation entry by ID
-app.delete("/outstation/:id", (req, res) => {
+// Get notices
+app.get("/notice", async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT * FROM notice`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Database error:', err.message);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Delete outstation
+app.delete("/outstation/:id", async (req, res) => {
   const id = req.params.id;
   const { pin } = req.body;
 
-  db.get(`SELECT pin FROM attendance WHERE id = ?`, [id], (err, row) => {
-    if (err || !row) {
-      return res.status(500).send("Error fetching outstation record");
-    }
+  try {
+    const result = await pool.query(`SELECT pin FROM outstation WHERE id = $1`, [id]);
 
-    if (row.pin !== pin && pin !== "9999") {
-      return res.status(403).send("Invalid PIN");
-    }
+    if (!result.rows.length) return res.status(500).send("Error fetching outstation record");
 
-    db.run(
-      `DELETE FROM attendance WHERE id = ? AND status = 'Outstation'`,
-      [id],
-      function (err) {
-        if (err) {
-          return res.status(500).send("Error deleting outstation record");
-        } else {
-          io.emit("deleteOutstation", { id });
-          return res.status(200).send("Outstation record deleted successfully");
-        }
-      }
-    );
-  });
+    const row = result.rows[0];
+    if (row.pin !== pin && pin !== "9999") return res.status(403).send("Invalid PIN");
+
+    await pool.query(`DELETE FROM outstation WHERE id = $1`, [id]);
+
+    io.emit("deleteOutstation", { id });
+    return res.status(200).send("Outstation record deleted successfully");
+  } catch (err) {
+    console.error('Database error:', err.message);
+    return res.status(500).send("Error deleting outstation record");
+  }
 });
 
-// Delete notice by ID
-app.delete("/notice/:id", (req, res) => {
+// Delete notice
+app.delete("/notice/:id", async (req, res) => {
   const id = req.params.id;
-  db.run(`DELETE FROM notice WHERE id = ?`, [id], function (err) {
-    if (err) {
-      return res.status(500).send("Error deleting notice");
-    } else {
-      io.emit("deleteNotice", { id });
-      return res.status(200).send("Notice deleted successfully");
-    }
-  });
+  try {
+    await pool.query(`DELETE FROM notice WHERE id = $1`, [id]);
+    io.emit("deleteNotice", { id });
+    return res.status(200).send("Notice deleted successfully");
+  } catch (err) {
+    console.error('Database error:', err.message);
+    return res.status(500).send("Error deleting notice");
+  }
 });
 
-// Serve the HTML file
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/index.html"));
-});
+// Serve HTML
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public/index.html")));
+app.get("/dashboard", (req, res) => res.sendFile(path.join(__dirname, "public/dashboard.html")));
 
-// Serve the dashboard file
-app.get("/dashboard", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/dashboard.html"));
-});
+// Start server
+const PORT = process.env.PORT || 5000;
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+async function startServer() {
+  try {
+    await initializeDatabase();
+    console.log('Database initialized successfully');
+
+    server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
+}
+
+startServer();
