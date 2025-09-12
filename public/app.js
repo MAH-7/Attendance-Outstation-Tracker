@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
   const socket = io(); // Connect to the Socket.IO server
 
   // Initial data fetch
@@ -86,18 +86,19 @@ document.addEventListener("DOMContentLoaded", function() {
               <td>${formatDate(outstation.start_date)}</td>
               <td>${formatDate(outstation.end_date)}</td>
               <td>${calculateDays(
-        outstation.start_date,
-        outstation.end_date
-      )}</td>
-              <td><button class="delete-btn" data-id="${outstation.id
-        }">Delete</button></td>
+                outstation.start_date,
+                outstation.end_date
+              )}</td>
+              <td><button class="delete-btn" data-id="${
+                outstation.id
+              }">X</button></td>
           `;
       outstationTable.appendChild(row);
     });
 
     // Add event listeners to delete buttons
     document.querySelectorAll(".delete-btn").forEach((button) => {
-      button.addEventListener("click", function() {
+      button.addEventListener("click", function () {
         const id = this.getAttribute("data-id");
         deleteOutstation(id);
       });
@@ -105,7 +106,9 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   function updateNoticeTable(data) {
-    const noticeTableContainer = document.getElementById("notice-board-container");
+    const noticeTableContainer = document.getElementById(
+      "notice-board-container"
+    );
     if (!noticeTableContainer) return; // Exit if element doesn't exist
     noticeTableContainer.innerHTML = ""; // Clear previous entries
 
@@ -126,13 +129,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Add event listeners to delete buttons
     document.querySelectorAll(".delete-btn-notice").forEach((button) => {
-      button.addEventListener("click", function() {
+      button.addEventListener("click", function () {
         const id = this.getAttribute("data-id");
         deleteNotice(id);
       });
     });
   }
-
 
   function calculateDays(start, end) {
     const startDate = new Date(start);

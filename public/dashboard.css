@@ -5,18 +5,18 @@ body {
 }
 
 button {
-  padding: 12px;
+  padding: 4px;
   /* margin-bottom: 10px;
   margin-left: 20px; */
   border: 1px solid #bdc3c7;
   border-radius: 4px;
-  font-size: 16px; /* Prevent zooming */
+  font-size: 10px; /* Prevent zooming */
 }
 
 button {
   background-color: #3498db;
   color: white;
-  font-size: 16px;
+  font-size: 10px;
   cursor: pointer;
   transition: background-color 0.3s;
 }
@@ -84,8 +84,6 @@ th {
 td {
   background-color: #ffffff;
 }
-
-
 
 .WPLw-elem {
   display: -webkit-box;
@@ -314,8 +312,6 @@ td {
   }
 }
 
-
-
 /* Minimalist Horizontal Card */
 
 #notice-board-container {
@@ -377,9 +373,9 @@ td {
   color: #333;
   margin-bottom: 4px;
   font-weight: 600;
-  word-wrap: break-word;  
-  word-break: break-word; 
-  max-width: calc(100% - 40px); 
+  word-wrap: break-word;
+  word-break: break-word;
+  max-width: calc(100% - 40px);
 }
 
 .notice-content p {
@@ -388,4 +384,3 @@ td {
   font-style: sans-serif;
   margin: 0;
 }
-
