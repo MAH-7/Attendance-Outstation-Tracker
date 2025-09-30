@@ -1,44 +1,192 @@
-# Hello Node!
+# JPKTimur Office Attendance & Outstation Tracker
 
-This project includes a Node.js server script and a web page that connects to it. The front-end page presents a form the visitor can use to submit a color name, sending the submitted value to the back-end API running on the server. The server returns info to the page that allows it to update the display with the chosen color. 🎨
+A web-based application to track employee attendance, outstation trips, and announcements for JPKTimur office.
 
-[Node.js](https://nodejs.org/en/about/) is a popular runtime that lets you run server-side JavaScript. This project uses the [Fastify](https://www.fastify.io/) framework and explores basic templating with [Handlebars](https://handlebarsjs.com/).
+## Features
 
-_Last updated: 14 August 2023_
+✅ **Attendance Tracking**
+- Record employee check-in times
+- Automatic calculation of check-out times based on work hours
+- Malaysia timezone support (Asia/Kuala_Lumpur)
+- Different work hours for weekdays (9 hours) and Thursdays (7.5 hours)
 
-## Prerequisites
+✅ **Outstation Management**
+- Track employees on outstation assignments
+- Date range tracking
+- PIN-protected deletion
 
-You'll get best use out of this project if you're familiar with basic JavaScript. If you've written JavaScript for client-side web pages this is a little different because it uses server-side JS, but the syntax is the same!
+✅ **Notice Board**
+- Post office announcements
+- Date-based notice management
 
-## What's in this project?
+✅ **Reports**
+- Generate Excel attendance reports
+- Generate PDF attendance reports
+- Monthly summaries with employee statistics
 
-← `README.md`: That’s this file, where you can tell people what your cool website does and how you built it.
+✅ **Real-time Updates**
+- Live updates using Socket.IO
+- Instant notification of attendance changes
 
-← `public/style.css`: The styling rules for the pages in your site.
+## Technology Stack
 
-← `server.js`: The **Node.js** server script for your new site. The JavaScript defines the endpoints in the site back-end, one to return the homepage and one to update with the submitted color. Each one sends data to a Handlebars template which builds these parameter values into the web page the visitor sees.
+- **Backend**: Node.js with Express
+- **Database**: Supabase (PostgreSQL via REST API)
+- **Real-time**: Socket.IO
+- **Timezone**: moment-timezone
+- **Reports**: xlsx (Excel), pdfkit (PDF)
 
-← `package.json`: The NPM packages for your project's dependencies.
+## Setup
 
-← `src/`: This folder holds the site template along with some basic data files.
+### Prerequisites
+- Node.js 18 or higher
+- A Supabase account (free tier works)
 
-← `src/pages/index.hbs`: This is the main page template for your site. The template receives parameters from the server script, which it includes in the page HTML. The page sends the user submitted color value in the body of a request, or as a query parameter to choose a random color.
+### Installation
 
-← `src/colors.json`: A collection of CSS color names. We use this in the server script to pick a random color, and to match searches against color names.
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd Attendance-Outstation-Tracker
+   ```
 
-← `src/seo.json`: When you're ready to share your new site or add a custom domain, change SEO/meta settings in here.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-## Try this next 🏗️
+3. **Configure Supabase**
+   - Create a project at [supabase.com](https://supabase.com)
+   - Get your Project URL and anon key from Settings → API
+   - Update `start.sh` with your credentials:
+     ```bash
+     export SUPABASE_KEY="your_anon_key_here"
+     ```
 
-Take a look in `TODO.md` for next steps you can try out in your new site!
+4. **Create Database Tables**
+   
+   Run these SQL commands in your Supabase SQL Editor:
 
-___Want a minimal version of this project to build your own Node.js app? Check out [Blank Node](https://glitch.com/edit/#!/remix/glitch-blank-node)!___
+   ```sql
+   CREATE TABLE attendance (
+     id SERIAL PRIMARY KEY,
+     employee TEXT,
+     status TEXT,
+     destination TEXT,
+     start_date DATE,
+     end_date DATE,
+     check_in_time TEXT,
+     back_time TEXT,
+     pin TEXT
+   );
 
-![Glitch](https://cdn.glitch.com/a9975ea6-8949-4bab-addb-8a95021dc2da%2FLogo_Color.svg?v=1602781328576)
+   CREATE TABLE outstation (
+     id SERIAL PRIMARY KEY,
+     employee VARCHAR(255) NOT NULL,
+     destination VARCHAR(255) NOT NULL,
+     start_date DATE NOT NULL,
+     end_date DATE NOT NULL,
+     pin VARCHAR(10) NOT NULL
+   );
 
-## You built this with Glitch!
+   CREATE TABLE notice (
+     id SERIAL PRIMARY KEY,
+     title TEXT,
+     content TEXT,
+     notice_date TEXT
+   );
+   ```
 
-[Glitch](https://glitch.com) is a friendly community where millions of people come together to build web apps and websites.
+5. **Start the server**
+   ```bash
+   ./start.sh
+   ```
+   
+   Or manually:
+   ```bash
+   export NODE_ENV=production
+   export PORT=3000
+   export SUPABASE_KEY="your_key_here"
+   node server.js
+   ```
 
-- Need more help? [Check out our Help Center](https://help.glitch.com/) for answers to any common questions.
-- Ready to make it official? [Become a paid Glitch member](https://glitch.com/pricing) to boost your app with private sharing, more storage and memory, domains and more.
+6. **Access the application**
+   - Main Page: http://localhost:3000
+   - Dashboard: http://localhost:3000/dashboard
+
+## API Endpoints
+
+- `GET /` - Main page
+- `GET /dashboard` - Dashboard page
+- `POST /submit-attendance` - Submit attendance
+- `POST /submit-notice` - Submit notice
+- `GET /present` - Get today's present employees
+- `GET /outstation` - Get outstation records
+- `GET /notice` - Get all notices
+- `DELETE /outstation/:id` - Delete outstation record (PIN protected)
+- `DELETE /notice/:id` - Delete notice
+- `GET /api/download-report` - Download attendance report (Excel/PDF)
+
+## Configuration
+
+### Environment Variables
+- `NODE_ENV` - Environment (production/development)
+- `PORT` - Server port (default: 3000)
+- `SUPABASE_KEY` - Supabase anon key
+
+### Work Hours Configuration
+The system automatically calculates check-out times based on check-in:
+- Monday-Wednesday: 9 hours
+- Thursday: 7.5 hours
+- Friday-Sunday: 9 hours
+- Check-ins before 7:30 AM are adjusted to 7:30 AM
+
+## Network Requirements
+
+**Important:** This application uses **Supabase's REST API over HTTPS** instead of direct PostgreSQL connections. This means:
+- ✅ Works on networks with firewall restrictions
+- ✅ No need to open PostgreSQL ports (5432/6543)
+- ✅ More reliable connectivity
+- ✅ Better for cloud deployments
+
+The old PostgreSQL direct connection version is backed up as `server-pg-old.js`.
+
+## Troubleshooting
+
+### Server won't start
+- Check if port 3000 is already in use: `lsof -i :3000`
+- Kill existing process: `pkill -f "node server"`
+
+### Database connection issues
+- Verify your Supabase project is active (not paused)
+- Check your SUPABASE_KEY is correct
+- Ensure tables are created in Supabase
+
+### Can't access from browser
+- Make sure the server is running: check terminal output
+- Try: http://localhost:3000 or http://127.0.0.1:3000
+
+## Development
+
+To stop the server:
+```bash
+pkill -f "node server"
+```
+
+To view logs:
+```bash
+tail -f logs/server.log  # if logging is enabled
+```
+
+## License
+
+See LICENSE file for details.
+
+## Support
+
+For issues or questions, please contact the JPKTimur IT team.
+
+---
+
+**Last Updated:** September 2025  
+**Version:** 2.0.0 (Supabase REST API)

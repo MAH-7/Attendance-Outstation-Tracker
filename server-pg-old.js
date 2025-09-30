@@ -1,11 +1,11 @@
 const express = require("express");
-const { createClient } = require("@supabase/supabase-js");
+const { Pool } = require("pg");
 const bodyParser = require("body-parser");
 const path = require("path");
 const cron = require("node-cron");
 const http = require("http");
 const socketIo = require("socket.io");
-const moment = require("moment-timezone");
+const moment = require("moment-timezone"); // Require moment-timezone
 const XLSX = require("xlsx");
 const PDFDocument = require("pdfkit");
 
@@ -13,32 +13,49 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-// Supabase client using REST API (works over HTTPS - bypasses firewall)
-const supabaseUrl = "https://qmpzaxochkqsmotvgksb.supabase.co";
-const supabaseKey = process.env.SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtcHpheG9jaGtxc21vdHZna3NiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MTc1OTQsImV4cCI6MjA3MzE5MzU5NH0.fxFTVUucu-LjNBlbaGvx1tUJobvdtLPqbtCwxssMjxA";
-const supabase = createClient(supabaseUrl, supabaseKey);
+// PostgreSQL connection pool - using Supabase
+const pool = new Pool({
+  connectionString:
+    process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// Test and initialize database
+// Initialize database tables
 async function initializeDatabase() {
   try {
-    console.log("Testing Supabase connection via REST API...");
-    
-    // Test connection by checking if tables exist
-    const { data, error } = await supabase.from("attendance").select("count", { count: "exact", head: true });
-    
-    if (error && error.code === "42P01") {
-      // Tables don't exist - need to be created via Supabase dashboard
-      console.log("⚠️  Tables need to be created in Supabase dashboard");
-      console.log("Tables required: attendance, outstation, notice");
-    } else if (error) {
-      console.error("Supabase connection error:", error);
-    } else {
-      console.log("✓ Connected to Supabase successfully via REST API");
-    }
+    await pool.query(`CREATE TABLE IF NOT EXISTS attendance (
+      id SERIAL PRIMARY KEY,
+      employee TEXT,
+      status TEXT,
+      destination TEXT,
+      start_date DATE,
+      end_date DATE,
+      check_in_time TEXT,
+      back_time TEXT,
+      pin TEXT
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS outstation (
+      id SERIAL PRIMARY KEY,
+      employee VARCHAR(255) NOT NULL,
+      destination VARCHAR(255) NOT NULL,
+      start_date DATE NOT NULL,
+      end_date DATE NOT NULL,
+      pin VARCHAR(10) NOT NULL
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS notice (
+      id SERIAL PRIMARY KEY,
+      title TEXT,
+      content TEXT,
+      notice_date TEXT
+    )`);
+
+    console.log("Database tables initialized successfully");
   } catch (err) {
     console.error("Error initializing database:", err);
   }
@@ -110,19 +127,11 @@ app.post("/submit-attendance", async (req, res) => {
         back_time = checkInDate.format("h:mm A");
       }
 
-      const { data, error } = await supabase
-        .from("attendance")
-        .insert([{
-          employee,
-          status,
-          check_in_time: formatted_check_in_time,
-          back_time,
-          start_date: today,
-        }])
-        .select();
-
-      if (error) throw error;
-      result = data[0];
+      result = await pool.query(
+        `INSERT INTO attendance (employee, status, check_in_time, back_time, start_date) 
+         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [employee, status, formatted_check_in_time, back_time, today]
+      );
 
       io.emit("newAttendance", {
         employee,
@@ -130,29 +139,21 @@ app.post("/submit-attendance", async (req, res) => {
         check_in_time: formatted_check_in_time,
         back_time,
         start_date: today,
-        id: result.id,
+        id: result.rows[0].id,
       });
     } else if (status === "Outstation") {
-      const { data, error } = await supabase
-        .from("outstation")
-        .insert([{
-          employee,
-          destination,
-          start_date,
-          end_date,
-          pin,
-        }])
-        .select();
-
-      if (error) throw error;
-      result = data[0];
+      result = await pool.query(
+        `INSERT INTO outstation (employee, destination, start_date, end_date, pin) 
+         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [employee, destination, start_date, end_date, pin]
+      );
 
       io.emit("newOutstation", {
         employee,
         destination,
         start_date,
         end_date,
-        id: result.id,
+        id: result.rows[0].id,
       });
     }
 
@@ -172,19 +173,16 @@ app.post("/submit-notice", async (req, res) => {
   notice_date = moment(notice_date).format("DD MMMM");
 
   try {
-    const { data, error } = await supabase
-      .from("notice")
-      .insert([{ title, content, notice_date }])
-      .select();
-
-    if (error) throw error;
-    const result = data[0];
+    const result = await pool.query(
+      `INSERT INTO notice (title, content, notice_date) VALUES ($1, $2, $3) RETURNING id`,
+      [title, content, notice_date]
+    );
 
     io.emit("newNotice", {
       title,
       content,
       notice_date,
-      id: result.id,
+      id: result.rows[0].id,
     });
 
     res.redirect("/");
@@ -198,14 +196,11 @@ app.post("/submit-notice", async (req, res) => {
 app.get("/present", async (req, res) => {
   try {
     const today = moment().tz("Asia/Kuala_Lumpur").format("YYYY-MM-DD");
-    const { data, error } = await supabase
-      .from("attendance")
-      .select("employee, check_in_time, back_time")
-      .eq("status", "Present")
-      .eq("start_date", today);
-
-    if (error) throw error;
-    res.json(data);
+    const result = await pool.query(
+      `SELECT employee, check_in_time, back_time FROM attendance WHERE status = 'Present' AND start_date = $1`,
+      [today]
+    );
+    res.json(result.rows);
   } catch (err) {
     console.error("Database error:", err.message);
     res.status(500).json({ error: "Database error" });
@@ -215,13 +210,10 @@ app.get("/present", async (req, res) => {
 // Get outstation employees
 app.get("/outstation", async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("outstation")
-      .select("*")
-      .order("id", { ascending: false });
-
-    if (error) throw error;
-    res.json(data);
+    const result = await pool.query(
+      `SELECT * FROM outstation ORDER BY id DESC`
+    );
+    res.json(result.rows);
   } catch (err) {
     console.error("Database error:", err.message);
     res.status(500).json({ error: "Database error" });
@@ -231,12 +223,8 @@ app.get("/outstation", async (req, res) => {
 // Get notices
 app.get("/notice", async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("notice")
-      .select("*");
-
-    if (error) throw error;
-    res.json(data);
+    const result = await pool.query(`SELECT * FROM notice`);
+    res.json(result.rows);
   } catch (err) {
     console.error("Database error:", err.message);
     res.status(500).json({ error: "Database error" });
@@ -249,24 +237,19 @@ app.delete("/outstation/:id", async (req, res) => {
   const { pin } = req.body;
 
   try {
-    const { data: record, error: fetchError } = await supabase
-      .from("outstation")
-      .select("pin")
-      .eq("id", id)
-      .single();
+    const result = await pool.query(
+      `SELECT pin FROM outstation WHERE id = $1`,
+      [id]
+    );
 
-    if (fetchError) throw fetchError;
-    if (!record) return res.status(404).send("Record not found");
+    if (!result.rows.length)
+      return res.status(500).send("Error fetching outstation record");
 
-    if (record.pin !== pin && pin !== "9999")
+    const row = result.rows[0];
+    if (row.pin !== pin && pin !== "9999")
       return res.status(403).send("Invalid PIN");
 
-    const { error: deleteError } = await supabase
-      .from("outstation")
-      .delete()
-      .eq("id", id);
-
-    if (deleteError) throw deleteError;
+    await pool.query(`DELETE FROM outstation WHERE id = $1`, [id]);
 
     io.emit("deleteOutstation", { id });
     return res.status(200).send("Outstation record deleted successfully");
@@ -280,13 +263,7 @@ app.delete("/outstation/:id", async (req, res) => {
 app.delete("/notice/:id", async (req, res) => {
   const id = req.params.id;
   try {
-    const { error } = await supabase
-      .from("notice")
-      .delete()
-      .eq("id", id);
-
-    if (error) throw error;
-
+    await pool.query(`DELETE FROM notice WHERE id = $1`, [id]);
     io.emit("deleteNotice", { id });
     return res.status(200).send("Notice deleted successfully");
   } catch (err) {
@@ -312,16 +289,17 @@ app.get("/api/download-report", async (req, res) => {
       `${year}-${String(parseInt(monthNum) + 1).padStart(2, '0')}-01`;
 
     // Query attendance data for the selected month
-    const { data: attendanceData, error } = await supabase
-      .from("attendance")
-      .select("employee, check_in_time, back_time, start_date")
-      .eq("status", "Present")
-      .gte("start_date", startDate)
-      .lt("start_date", nextMonth)
-      .order("start_date")
-      .order("employee");
+    const result = await pool.query(
+      `SELECT employee, check_in_time, back_time, start_date 
+       FROM attendance 
+       WHERE status = 'Present' 
+       AND start_date >= $1 
+       AND start_date < $2 
+       ORDER BY start_date, employee`,
+      [startDate, nextMonth]
+    );
 
-    if (error) throw error;
+    const attendanceData = result.rows;
 
     if (format === 'excel') {
       await generateExcelReport(res, attendanceData, month);
@@ -474,15 +452,15 @@ app.get("/dashboard", (req, res) =>
 );
 
 // Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
     await initializeDatabase();
-    console.log("Database connection ready");
+    console.log("Database initialized successfully");
 
     server.listen(PORT, "0.0.0.0", () =>
-      console.log(`✓ Server running on http://localhost:${PORT}`)
+      console.log(`Server running on port ${PORT}`)
     );
   } catch (err) {
     console.error("Failed to start server:", err);
