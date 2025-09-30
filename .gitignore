@@ -1,3 +1,31 @@
 .glitchdotcom.json
 .node-gyp
 node_modules
+
+# Environment and secrets
+.env
+.env.local
+start.sh
+
+# Database
+database.db
+*.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Replit
+.replit
+replit.md
+
+# Old backups
+server-pg-old.js
